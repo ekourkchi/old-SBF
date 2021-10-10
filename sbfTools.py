@@ -17,6 +17,50 @@ from matplotlib.colors import LogNorm
 
 import copy
 
+
+
+##############################################################
+def set_axes(ax, xlim=None, ylim=None, fontsize=16, twinx=True, twiny=True, minor=True, inout='in'):
+        
+        if not ylim is None:
+            ax.set_ylim(ylim)
+        else:
+            ylim = ax.get_ylim() 
+            
+        if not xlim is None:    
+            ax.set_xlim(xlim) 
+        else:
+            xlim = ax.get_xlim()
+            
+        ax.tick_params(which='major', length=6, width=1., direction=inout)
+#         if minor:
+        ax.tick_params(which='minor', length=3, color='#000033', width=1.0, direction=inout)  
+        
+        if twiny:
+            y_ax = ax.twinx()
+            y_ax.set_ylim(ylim)
+            y_ax.set_yticklabels([])
+            y_ax.minorticks_on()
+            y_ax.tick_params(which='major', length=6, width=1., direction=inout)
+            if minor:
+                y_ax.tick_params(which='minor', length=3, color='#000033', width=1.0, direction=inout) 
+        
+        if twinx:
+            x_ax = ax.twiny()
+            x_ax.set_xlim(xlim)
+            x_ax.set_xticklabels([])
+            x_ax.minorticks_on()
+            x_ax.tick_params(which='major', length=6, width=1.0, direction=inout)
+            if minor:
+                x_ax.tick_params(which='minor', length=3, color='#000033', width=1.0, direction=inout)     
+
+        for tick in ax.xaxis.get_major_ticks():
+                    tick.label.set_fontsize(fontsize) 
+        for tick in ax.yaxis.get_major_ticks():
+                    tick.label.set_fontsize(fontsize) 
+        
+        return x_ax, y_ax
+
 ##############################################################
 
 def ellipse_polyline(ellipses, n=10000):
