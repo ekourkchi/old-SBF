@@ -311,16 +311,22 @@ def imOpen(inFits):
 
 ##############################################################
 
-def seg2mask(inFits, outMask, overwrite=True):
+def seg2mask(inFits, outMask, overwrite=True, seg_num=0):
     
     imarray, header = imOpen(inFits)
     imarray[imarray==0] = -1
-    imarray[imarray>0] = 0
+    imarray[imarray>seg_num] = 0
     imarray[imarray==-1] = 1
     
-    fits.writeto(outMask, imarray, header, overwrite=overwrite)
+    fits.writeto(outMask, np.float32(imarray), header, overwrite=overwrite)
     
     return imarray
+
+##############################################################
+
+
+
+
 
 ##############################################################
 
@@ -370,18 +376,22 @@ class ellOBJ:
     
     catalName = "catal.dat"
     objRoot = './'
-    monsta='/home/ehsan/Home/Monsta/bin/monsta'
+    inFolder = './'
+    monsta = 'monsta'
     
-    def __init__(self, name, outFolder=None):
+    def __init__(self, name, outFolder=None, inFolder=None):
         
         if outFolder is not None:
             createDir(outFolder)
             self.objRoot = outFolder+'/'
         
+        if inFolder is not None:
+            self.inFolder = inFolder+'/'
+        
         self.name = name
         self.SExtract()
         
-        hdu_list = fits.open('{}/{}j.fits'.format(name,name))
+        hdu_list = fits.open(self.inFolder+'{}/{}j.fits'.format(name,name))
         image_data = hdu_list[0].data
         w = wcs.WCS(hdu_list[0].header)
         self.x_max, self.y_max = image_data.shape
@@ -411,13 +421,17 @@ class ellOBJ:
         root = self.objRoot
         suffix = '.%03d'%mask
         mask_name = root+'/mask'+suffix
-        return self.tv(mask_name, ax=ax, options=options, additions=additions)
+
+        print(mask_name)
+
+
+        return self.tv(fits_file=mask_name, ax=ax, options=options, additions=additions)
     
     def tv(self, fits_file=None, ax=None, options="", additions=""):
         
         if fits_file is None:
             name = self.name
-            fits_file = "{}/{}j.fits".format(name, name)
+            fits_file = self.inFolder+"{}/{}j.fits".format(name, name)
         
         root = self.objRoot
         jpg_name = root+'tv.jpg'
@@ -430,7 +444,7 @@ class ellOBJ:
         q
         
         """
-        
+
         self.run_monsta(script, root+'tv.pro', root+'tv.log')
         
         return self.plot_jpg(jpg_name, ax=ax)
@@ -446,7 +460,7 @@ class ellOBJ:
         catalName = root + self.catalName
         segmentation = root + 'segmentation.fits'
         
-        cmd = 'sex -c wfc3j_sex.config {}/{}j.fits'.format(name,name)+' -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME '+segmentation+' -CATALOG_NAME ' + catalName
+        cmd = 'sex -c wfc3j_sex.config '+self.inFolder+'{}/{}j.fits'.format(name,name)+' -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME '+segmentation+' -CATALOG_NAME ' + catalName
         
         #print(cmd)
         
@@ -470,23 +484,40 @@ class ellOBJ:
         self.name = name
         
     
+
     def elliprof(self, inner_r=5, outer_r=200, sky=None, 
                  cosnx="", k=None, 
                  nr=40, niter=10,
-                 model = 0, mask=None, options=""
+                 model = 0, mask=None, options="", use_common=False
                 ):
         
         root = self.objRoot
         suffix = '.%03d'%model
+        name = self.name
         
         if sky is None:
             sky = self.sky_med
         
         if mask is None:
             maskName = './common.mask'
+            monsta_masking =  """
+        cop 3 1 
+        """
         else:
             maskName = root+'/mask'+'.%03d'%mask
-               
+            model_mask = root+'/model'+'.%03d'%mask
+            monsta_masking =  """
+        cop 6 2
+        mc 6 0
+        ac 6 1
+        si 6 2
+        rd 7 """+model_mask+"""
+        sc 7 """+str(sky)+"""   ! aky subtraction
+        mi 7 6
+        cop 3 1 
+        ai 3 7 
+        """
+              
         if cosnx == "":
             kosnx = ""
         else:
@@ -504,17 +535,25 @@ class ellOBJ:
         elliprof_cmd = "elliprof 3  model rmstar x0="+str(self.x0)+" y0="+str(self.y0)
         elliprof_cmd += " r0="+str(inner_r)+" r1="+str(outer_r)+" nr="+str(nr)+" niter="+str(niter)+" "+kosnx
         elliprof_cmd += " "+options
+
+       
+        objFits = self.inFolder+'{}/{}j.fits'.format(name,name)
         
         ## Monsta script
         script = """
         string name '"""+self.name+"""'
-        rd 1 '{name}/{name}j.fits'
+        rd 1 '"""+objFits+"""'
         sc 1 """+str(sky)+"""                            ! sky subtraction
         rd 2 """+maskName+"""
         mi 1 2
         tv 1 sqrt JPEG="""+objName+""".jpg
-        cop 3 1 
-        """+elliprof_cmd+"""
+
+        """
+
+        script += monsta_masking
+
+        script += elliprof_cmd
+        script += """
         print elliprof file="""+ellipseFile+"""
         cop 4 1
         si 4 3
@@ -528,7 +567,7 @@ class ellOBJ:
         q
         
         """
-        
+       
         Monsta_pro = root+'monsta'+suffix+'.pro'
         Monsta_log = root+'monsta'+suffix+'.log'
         
@@ -577,6 +616,8 @@ class ellOBJ:
         mi 1 2 
         cop 3 1
         di 1 1 
+        rd 5 './common.mask'
+        mi 1 5
         wd 1 """+maskName+""" bitmap
         tv 1 JPEG="""+maskName+""".jpg
         q
@@ -584,16 +625,49 @@ class ellOBJ:
         """       
         
         self.run_monsta(script, root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
+
+    def naive_Sextract(self, minArea=10, thresh=2, mask=None):
         
+        name = self.name
+        root = self.objRoot
+        fits_name = self.inFolder+'{}/{}j.fits'.format(name,name)
+        odj_common = root+'/tmp'
+
+        if mask is None:
+            suffix_mask = '.%03d'%model
+        else:
+            suffix_mask = '.%03d'%mask
+
+        maskName = root+'/mask'+suffix_mask
+        
+        script = """
+        rd 1 """+fits_name+"""
+        rd 2 ./common.mask
+        mi 1 2
+        wd 1 """+odj_common+"""
+        q
+
+        """
+        self.run_monsta(script, root+'obj.pro', root+'obj.log')  
+              
+        cmd = 'sex -c wfc3j_sex.config '+odj_common
+        cmd += ' -BACK_SIZE 500 -DETECT_MINAREA 100 -DETECT_THRESH 5 -CHECKIMAGE_TYPE "SEGMENTATION" -CHECKIMAGE_NAME '
+        cmd += maskName
+              
+        xcmd(cmd + ' > '+root+'sextractor.log', verbose=False)
+        
+        mask2 = seg2mask(maskName, maskName, seg_num=1)      
+        im, _ = imOpen(odj_common)
+
+        return im, mask2     
         
     def backSextract(self):
         
         name = self.name
         root = self.objRoot
-        fits_name = '{}/{}j.fits'.format(name,name)
+        fits_name = self.inFolder+'{}/{}j.fits'.format(name,name)
         odj_common = root+'/tmp'
-        segmentation = root + 'mask2.fits'
-        back = root + 'back.fits'
+        segmentation = root + 'back_mask.fits'
         
         script = """
         rd 1 """+fits_name+"""
@@ -734,7 +808,7 @@ class ellOBJ:
             ax.set_ylim([0, self.y_max])
 
         for i in range(len(df)):
-            plot_E(df.iloc[i], **kwargs)
+            plot_E(df.iloc[i], ax=ax, **kwargs)
         
         return ax
     
