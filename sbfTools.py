@@ -404,6 +404,8 @@ class ellOBJ:
         self.sky_med = np.median(a)
         self.sky_ave = np.mean(a)
         self.sky_std = np.std(a)
+
+        self.r_max = int(min([self.x0, self.x_max-self.x0, self.y0, self.y_max-self.y0]))
         
     def tv_resid(self, model=0, ax=None, options="", additions=""):
         root = self.objRoot
@@ -417,13 +419,14 @@ class ellOBJ:
         fits_file = root+'/model'+suffix
         return self.tv(fits_file=fits_file, ax=ax, options=options, additions=additions)
     
-    def tv_mask(self, mask=0, ax=None, options="", additions=""):
+    def tv_mask(self, mask=None, ax=None, options="", additions=""):
         root = self.objRoot
-        suffix = '.%03d'%mask
-        mask_name = root+'/mask'+suffix
 
-        print(mask_name)
-
+        if mask is None:
+            mask_name='./common.mask'
+        else:
+            suffix = '.%03d'%mask
+            mask_name = root+'/mask'+suffix
 
         return self.tv(fits_file=mask_name, ax=ax, options=options, additions=additions)
     
@@ -482,8 +485,75 @@ class ellOBJ:
         self.b = B*R
         self.R = R
         self.name = name
+
+
+    def addMasks(self, maskList=None, mask=None):
         
-    
+        root = self.objRoot
+        if mask is None:
+            outMask = root+'/composit.mask'
+        else:
+            outMask = root+'/mask'+'.%03d'%mask
+
+        
+        script = """
+        rd 1 ./common.mask
+        """
+
+        if maskList is not None:
+
+            for m in maskList:
+                suffix = '.%03d'%m
+                inMask = root+'/mask'+suffix
+                if os.path.isfile(inMask):
+                    script += """
+                    rd 2 """+inMask+"""
+                    mi 1 2
+                    """
+        script += """
+        wd 1 """+outMask+""" bitmap
+        q
+        
+        """       
+        
+        self.run_monsta(script, root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
+
+
+        return outMask
+
+
+    def outerR(self, c_kron):
+        return min(int(c_kron*np.sqrt(self.a*self.b)), self.r_max)
+
+        
+    def maskOpen(self, mask=None, maskFile=None):
+        root = self.objRoot
+
+        if maskFile is None:
+            if mask is None:
+                inMask='./common.mask'
+            else:
+                suffix = '.%03d'%mask
+                inMask = root+'/mask'+suffix
+        else:
+            inMask = maskFile
+        
+        ## Monsta script
+        script = """
+        rd 1 """+inMask+"""
+        wd 1 """+inMask+'.fits'+""" 
+        q
+
+        """       
+
+        run_monsta(script, 'monsta.pro', 'monsta.log')
+        xcmd("rm monsta.log; rm monsta.pro", False)
+
+        image, header = imOpen(inMask+'.fits')
+        xcmd("rm "+inMask+'.fits', False)
+
+        return image, header
+
 
     def elliprof(self, inner_r=5, outer_r=200, sky=None, 
                  cosnx="", k=None, 
@@ -603,9 +673,11 @@ class ellOBJ:
         
         sex_cmd = """sex """+residName+""" -c wfc3j.inpar -CHECKIMAGE_NAME """+objName
         sex_cmd += " -CATALOG_NAME  "+objCatal
-        sex_cmd += " -DETECT_MINAREA "+str(minArea)
+        sex_cmd += " -DETECT_MINAREA 500" # +str(minArea)
         sex_cmd += " -DETECT_THRESH "+str(thresh)
         sex_cmd += " -WEIGHT_IMAGE  "+modelName
+
+        print(sex_cmd)
         
         ## Monsta script
         script = """
@@ -651,7 +723,7 @@ class ellOBJ:
         self.run_monsta(script, root+'obj.pro', root+'obj.log')  
               
         cmd = 'sex -c wfc3j_sex.config '+odj_common
-        cmd += ' -BACK_SIZE 500 -DETECT_MINAREA 100 -DETECT_THRESH 5 -CHECKIMAGE_TYPE "SEGMENTATION" -CHECKIMAGE_NAME '
+        cmd += ' -BACK_SIZE 500 -DETECT_MINAREA '+str(minArea)+' -DETECT_THRESH '+str(thresh)+' -CHECKIMAGE_TYPE "SEGMENTATION" -CHECKIMAGE_NAME '
         cmd += maskName
               
         xcmd(cmd + ' > '+root+'sextractor.log', verbose=False)
