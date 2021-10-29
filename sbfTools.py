@@ -295,9 +295,11 @@ def run_monsta(script, Monsta_pro, Monsta_log, monsta="/home/ehsan/Home/Monsta/b
 
     with open(Monsta_log) as f:
         text = f.read()
-        if "ERROR" in text.upper().split( ):
-            print(text)
-            return Monsta_log
+
+    if "ERROR" in text.upper().split():
+        print(text)
+        return Monsta_log
+    return 'OK'
             
 ##############################################################
 
@@ -314,9 +316,11 @@ def imOpen(inFits):
 def seg2mask(inFits, outMask, overwrite=True, seg_num=0):
     
     imarray, header = imOpen(inFits)
-    imarray[imarray==0] = -1
-    imarray[imarray>seg_num] = 0
-    imarray[imarray==-1] = 1
+    imarray[((imarray==0))] = -1    # good pixel
+    if seg_num!=0:
+         imarray[((imarray==seg_num))] = -1    # good pixel
+    imarray[(imarray!=-1)] = 0   # masked
+    imarray[imarray==-1] = 1   # good pixel
     
     fits.writeto(outMask, np.float32(imarray), header, overwrite=overwrite)
     
@@ -324,7 +328,16 @@ def seg2mask(inFits, outMask, overwrite=True, seg_num=0):
 
 ##############################################################
 
-
+# def seg2mask(inFits, outMask, overwrite=True, seg_num=0):
+    
+#     imarray, header = imOpen(inFits)
+#     imarray[imarray==0] = -1
+#     imarray[imarray>seg_num] = 0
+#     imarray[imarray==-1] = 1
+    
+#     fits.writeto(outMask, np.float32(imarray), header, overwrite=overwrite)
+    
+#     return imarray
 
 
 
@@ -381,29 +394,34 @@ class ellOBJ:
     
     def __init__(self, name, outFolder=None, inFolder=None):
         
-        if outFolder is not None:
-            createDir(outFolder)
-            self.objRoot = outFolder+'/'
+        if outFolder is None:
+            outFolder = "Outputs_"+name
+
         
+        createDir(outFolder)
+        self.objRoot = outFolder+'/'
+        
+
         if inFolder is not None:
             self.inFolder = inFolder+'/'
         
         self.name = name
-        self.SExtract()
+
+        try:
+            self.SExtract()
+        except:
+            print("Error: Could not run SExtractor on the file")
+            fits_file = self.inFolder+'{}/{}j.fits'.format(name,name)
+            if not os.path.exists(fits_file):
+                print("Couldn't find "+fits_file)
+            return
         
         hdu_list = fits.open(self.inFolder+'{}/{}j.fits'.format(name,name))
         image_data = hdu_list[0].data
         w = wcs.WCS(hdu_list[0].header)
         self.x_max, self.y_max = image_data.shape
-        
-        
-        im, mask2 = self.backSextract()
-        masked_image = im*mask2
-        a = masked_image
-        a = a[(a!=0)]
-        self.sky_med = np.median(a)
-        self.sky_ave = np.mean(a)
-        self.sky_std = np.std(a)
+                
+        self.backSextract()
 
         self.r_max = int(min([self.x0, self.x_max-self.x0, self.y0, self.y_max-self.y0]))
         
@@ -465,7 +483,7 @@ class ellOBJ:
         
         cmd = 'sex -c wfc3j_sex.config '+self.inFolder+'{}/{}j.fits'.format(name,name)+' -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME '+segmentation+' -CATALOG_NAME ' + catalName
         
-        #print(cmd)
+        # print(cmd)
         
         xcmd(cmd + ' > '+root+'sextractor.log', verbose=False)
         
@@ -511,11 +529,12 @@ class ellOBJ:
                     mi 1 2
                     """
         script += """
-        wd 1 """+outMask+""" bitmap
+        wd 1 """+outMask+""" 
         q
         
         """       
-        
+        # print(root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
+
         self.run_monsta(script, root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
 
 
@@ -558,7 +577,7 @@ class ellOBJ:
     def elliprof(self, inner_r=5, outer_r=200, sky=None, 
                  cosnx="", k=None, 
                  nr=40, niter=10,
-                 model = 0, mask=None, options="", use_common=False
+                 model = 0, mask=None, options="", use_common=False, model_mask=None
                 ):
         
         root = self.objRoot
@@ -573,9 +592,14 @@ class ellOBJ:
             monsta_masking =  """
         cop 3 1 
         """
+        elif model_mask is None:
+            maskName = root+'/mask'+'.%03d'%mask
+            monsta_masking =  """
+        cop 3 1 
+        """
         else:
             maskName = root+'/mask'+'.%03d'%mask
-            model_mask = root+'/model'+'.%03d'%mask
+            model_mask = root+'/model'+'.%03d'%model_mask
             monsta_masking =  """
         cop 6 2
         mc 6 0
@@ -625,11 +649,11 @@ class ellOBJ:
         script += elliprof_cmd
         script += """
         print elliprof file="""+ellipseFile+"""
-        cop 4 1
-        si 4 3
-        ac 3 """+str(sky)+"""
-        mi 3 2
-        mi 4 2
+        cop 4 1                               ! object
+        si 4 3                                ! object - model
+        ac 3 """+str(sky)+"""                  
+        !mi 3 2 
+        mi 4 2                                ! multiply by mask
         wd 3 """+modelName+"""
         wd 4 """+residName+"""
         tv 4 JPEG="""+residName+""".jpg
@@ -640,6 +664,8 @@ class ellOBJ:
        
         Monsta_pro = root+'monsta'+suffix+'.pro'
         Monsta_log = root+'monsta'+suffix+'.log'
+
+        # print(Monsta_pro, Monsta_log)
         
         return self.run_monsta(script, Monsta_pro, Monsta_log)
         
@@ -673,21 +699,20 @@ class ellOBJ:
         
         sex_cmd = """sex """+residName+""" -c wfc3j.inpar -CHECKIMAGE_NAME """+objName
         sex_cmd += " -CATALOG_NAME  "+objCatal
-        sex_cmd += " -DETECT_MINAREA 500" # +str(minArea)
+        sex_cmd += " -DETECT_MINAREA " +str(minArea)
         sex_cmd += " -DETECT_THRESH "+str(thresh)
         sex_cmd += " -WEIGHT_IMAGE  "+modelName
+        sex_cmd += " -CHECKIMAGE_TYPE SEGMENTATION "
 
-        print(sex_cmd)
+        # print(sex_cmd)
+
+        xcmd(sex_cmd + ' > '+root+'sextractor.log', verbose=False)
+        seg2mask(objName, objName) 
+       
         
         ## Monsta script
         script = """
-        % """+sex_cmd+"""
         rd 1 """+objName+"""
-        di 1 1
-        rd 2 '"""+residName+"""'
-        mi 1 2 
-        cop 3 1
-        di 1 1 
         rd 5 './common.mask'
         mi 1 5
         wd 1 """+maskName+""" bitmap
@@ -695,15 +720,28 @@ class ellOBJ:
         q
         
         """       
-        
+        # print(root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
+
         self.run_monsta(script, root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
 
-    def naive_Sextract(self, minArea=10, thresh=2, mask=None):
+    def naive_Sextract(self, minArea=10, thresh=2, mask=None, smooth=None):
         
         name = self.name
         root = self.objRoot
         fits_name = self.inFolder+'{}/{}j.fits'.format(name,name)
         odj_common = root+'/tmp'
+
+        if smooth is not None:
+            script = """
+            rd 1 """+fits_name+"""
+            smooth 1 fw="""+str(smooth)+"""
+            wd 1 """+odj_common+"""
+            q
+            
+            """
+            fits_name = odj_common
+            self.run_monsta(script, root+'obj.pro', root+'obj.log')
+
 
         if mask is None:
             suffix_mask = '.%03d'%model
@@ -727,13 +765,22 @@ class ellOBJ:
         cmd += maskName
               
         xcmd(cmd + ' > '+root+'sextractor.log', verbose=False)
+
+        im, header = imOpen(maskName)
+        x0 = int(np.round(self.x0))
+        y0 = int(np.round(self.y0))
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,4))
+
+        im, header = imOpen(maskName)
+        ax1.imshow(np.flipud(im))
         
-        mask2 = seg2mask(maskName, maskName, seg_num=1)      
+        mask2 = seg2mask(maskName, maskName, seg_num=im[x0,y0])      
         im, _ = imOpen(odj_common)
 
-        return im, mask2     
+        return ax1, ax2
         
-    def backSextract(self):
+    def backSextract(self, thresh=0.03):
         
         name = self.name
         root = self.objRoot
@@ -751,16 +798,28 @@ class ellOBJ:
         """
         self.run_monsta(script, root+'obj.pro', root+'obj.log')  
             
-            
-            
         cmd = 'sex -c wfc3j_sex.config '+odj_common
-        cmd += ' -BACK_SIZE 500 -DETECT_MINAREA 4 -DETECT_THRESH 0.03 -CHECKIMAGE_TYPE "SEGMENTATION" -CHECKIMAGE_NAME '
+        cmd += ' -BACK_SIZE 500 -DETECT_MINAREA 4 -DETECT_THRESH ' + str(thresh) + ' -CHECKIMAGE_TYPE "SEGMENTATION" -CHECKIMAGE_NAME '
         cmd += segmentation
               
         xcmd(cmd + ' > '+root+'sextractor.log', verbose=False)
         
         mask2 = seg2mask(segmentation, segmentation)      
         im, _ = imOpen(odj_common)
+        
+        masked_image = im*mask2
+        a = masked_image
+        a = a[(a!=0)]
+        std = np.std(a)
+        median = np.median(a)
+        a = a[((a>median-3.*std)&(a<median+3.*std))]
+
+        self.sky_med = np.median(a)
+        self.sky_ave = np.mean(a)
+        self.sky_std = np.std(a)
+
+        self.masked_image = masked_image
+        self.back_pixels = a
 
         return im, mask2
         
@@ -775,11 +834,12 @@ class ellOBJ:
 
         with open(Monsta_log) as f:
             text = f.read()
-            Tsplit = text.upper().split( )
-            if "ERROR" in Tsplit or 'SEGMENTATION FAULT' in Tsplit:
-                return text
-            else:
-                return "OK"
+        Tsplit = text.upper().split()
+        if "ERROR" in Tsplit or 'SEGMENTATION FAULT' in Tsplit:
+            print(text)
+            return text
+        else:
+            return "OK"
             
           
     def getColName(self, catalName):
@@ -887,33 +947,25 @@ class ellOBJ:
     
     def plot_background(self):   
         
-        im, mask2 = self.backSextract()
-
-        masked_image = im*mask2
-
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,4))
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15,4))
 
         ## objects are masked, display background pixels
-        ax1 = plot_2darray(masked_image, ax=ax1)
+        ax1 = plot_2darray(self.masked_image, ax=ax1)
         ax1.set_title(self.name, fontsize=16)
         ax1.set_xlabel("X [pixel]", fontsize=14)
         ax1.set_ylabel("Y [pixel]", fontsize=14)
 
-        a = masked_image
-        a = a[(a!=0)]
-        median = np.median(a)
-        mean = np.mean(a)
-        std = np.std(a)
-
-        print("Back Median: %.2f"%median)
-        print("Back Mean: %.2f"%mean)
-        print("Back Stdev: %.2f"%std)
+        print("Back Median: %.2f"%self.sky_med)
+        print("Back Mean: %.2f"%self.sky_ave)
+        print("Back Stdev: %.2f"%self.sky_std)
 
         ## Histogram of the potential background pixel values
-        ax2.hist(a, bins=np.linspace(mean-4*std, mean+4*std, 10), density=True, color='g', alpha=0.7)
+        ax2.hist(self.back_pixels, bins=np.linspace(self.sky_med-3*self.sky_std, self.sky_med+3*self.sky_std, 10), density=True, color='g', alpha=0.7)
         ax2.set_xlabel("pixel value", fontsize=14)
         ax2.set_ylabel("frequency", fontsize=14)
         ax2.set_title("Background", fontsize=16)
+
+        self.tv(options="log", ax=ax3)
         
-        return ax1, ax2
+        return ax1, ax2, ax3
         
