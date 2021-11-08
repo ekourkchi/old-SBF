@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, string, math
 import numpy as np
 from scipy.linalg import eigh
 from scipy.optimize import minimize_scalar
@@ -418,7 +418,7 @@ class ellOBJ:
         
         hdu_list = fits.open(self.inFolder+'{}/{}j.fits'.format(name,name))
         image_data = hdu_list[0].data
-        w = wcs.WCS(hdu_list[0].header)
+        # w = wcs.WCS(hdu_list[0].header)
         self.x_max, self.y_max = image_data.shape
                 
         self.backSextract()
