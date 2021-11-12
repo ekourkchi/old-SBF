@@ -669,7 +669,7 @@ class ellOBJ:
         
         return self.run_monsta(script, Monsta_pro, Monsta_log)
         
-    def objSEextract(self, model=0, smooth=None, minArea=10, thresh=2, mask=None):
+    def objSExtract(self, model=0, smooth=None, minArea=10, thresh=2, mask=None):
         
         root = self.objRoot
         suffix = '.%03d'%model
@@ -704,7 +704,7 @@ class ellOBJ:
         sex_cmd += " -WEIGHT_IMAGE  "+modelName
         sex_cmd += " -CHECKIMAGE_TYPE SEGMENTATION "
 
-        # print(sex_cmd)
+        print(sex_cmd)
 
         xcmd(sex_cmd + ' > '+root+'sextractor.log', verbose=False)
         seg2mask(objName, objName) 
