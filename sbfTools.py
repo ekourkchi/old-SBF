@@ -504,6 +504,36 @@ class ellOBJ:
         self.R = R
         self.name = name
 
+    def inputMaks(self, maskName, mask=None):
+
+        root = self.objRoot
+        if mask is None:
+            outMask = root+'/composit.mask'
+        else:
+            outMask = root+'/mask'+'.%03d'%mask
+
+        script = """
+        rd 1 ./common.mask
+        """
+
+        if maskName is not None:
+            if os.path.isfile(maskName):
+                script += """
+                rd 2 """+maskName+"""
+                mi 1 2
+                """
+        script += """
+        wd 1 """+outMask+""" 
+        q
+        
+        """       
+        # print(root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
+
+        self.run_monsta(script, root+'obj_inMask.pro', root+'obj_inMask.log')
+
+        return outMask       
+        
+
 
     def addMasks(self, maskList=None, mask=None):
         
@@ -669,7 +699,7 @@ class ellOBJ:
         
         return self.run_monsta(script, Monsta_pro, Monsta_log)
         
-    def objSExtract(self, model=0, smooth=None, minArea=10, thresh=2, mask=None):
+    def objSExtract(self, model=0, smooth=None, minArea=10, thresh=2, mask=None, renuc=1):
         
         root = self.objRoot
         suffix = '.%03d'%model
@@ -696,13 +726,31 @@ class ellOBJ:
             """
             residName = tmp
             self.run_monsta(script, root+'obj.pro', root+'obj.log')
+
+        variance = modelName
+        if renuc is not None and renuc!=1:
+            variance = root+'/model'+suffix+'_renuc_'+str(renuc)
+            script = """
+            rd 1 """+modelName+"""
+            mc 1 """+str(renuc)+"""
+            wd 1 """+variance+"""
+            q
+            
+            """
+            
+            self.run_monsta(script, root+'obj.pro', root+'obj.log')            
         
         sex_cmd = """sex """+residName+""" -c wfc3j.inpar -CHECKIMAGE_NAME """+objName
         sex_cmd += " -CATALOG_NAME  "+objCatal
         sex_cmd += " -DETECT_MINAREA " +str(minArea)
         sex_cmd += " -DETECT_THRESH "+str(thresh)
-        sex_cmd += " -WEIGHT_IMAGE  "+modelName
+        sex_cmd += " -ANALYSIS_THRESH "+str(thresh)
         sex_cmd += " -CHECKIMAGE_TYPE SEGMENTATION "
+
+        if renuc is not None:
+            sex_cmd += " -WEIGHT_IMAGE  "+variance
+            sex_cmd += " -WEIGHT_TYPE  MAP_VAR"
+            
 
         print(sex_cmd)
 
