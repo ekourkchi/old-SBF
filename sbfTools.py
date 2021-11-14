@@ -711,6 +711,7 @@ class ellOBJ:
         
         residName = root+'/resid'+suffix
         modelName = root+'/model'+suffix
+        segment = root+'/objCheck'+suffix+'.segment'
         objName = root+'/objCheck'+suffix
         objCatal = root+'/objCatal'+suffix
         maskName = root+'/mask'+suffix_mask
@@ -740,7 +741,7 @@ class ellOBJ:
             
             self.run_monsta(script, root+'obj.pro', root+'obj.log')            
         
-        sex_cmd = """sex """+residName+""" -c wfc3j.inpar -CHECKIMAGE_NAME """+objName
+        sex_cmd = """sex """+residName+""" -c wfc3j.inpar -CHECKIMAGE_NAME """+segment
         sex_cmd += " -CATALOG_NAME  "+objCatal
         sex_cmd += " -DETECT_MINAREA " +str(minArea)
         sex_cmd += " -DETECT_THRESH "+str(thresh)
@@ -755,7 +756,9 @@ class ellOBJ:
         print(sex_cmd)
 
         xcmd(sex_cmd + ' > '+root+'sextractor.log', verbose=False)
-        seg2mask(objName, objName) 
+        seg2mask(segment, objName) 
+
+        print(segment, objName, maskName)
        
         
         ## Monsta script
@@ -995,13 +998,13 @@ class ellOBJ:
     
     def plot_background(self):   
         
-        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15,4))
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(14,4))
 
         ## objects are masked, display background pixels
         ax1 = plot_2darray(self.masked_image, ax=ax1)
-        ax1.set_title(self.name, fontsize=16)
-        ax1.set_xlabel("X [pixel]", fontsize=14)
-        ax1.set_ylabel("Y [pixel]", fontsize=14)
+        ax1.set_title(self.name, fontsize=14)
+        ax1.set_xlabel("X [pixel]", fontsize=12)
+        ax1.set_ylabel("Y [pixel]", fontsize=12)
 
         print("Back Median: %.2f"%self.sky_med)
         print("Back Mean: %.2f"%self.sky_ave)
@@ -1009,9 +1012,9 @@ class ellOBJ:
 
         ## Histogram of the potential background pixel values
         ax2.hist(self.back_pixels, bins=np.linspace(self.sky_med-3*self.sky_std, self.sky_med+3*self.sky_std, 10), density=True, color='g', alpha=0.7)
-        ax2.set_xlabel("pixel value", fontsize=14)
-        ax2.set_ylabel("frequency", fontsize=14)
-        ax2.set_title("Background", fontsize=16)
+        ax2.set_xlabel("pixel value", fontsize=12)
+        ax2.set_ylabel("frequency", fontsize=12)
+        ax2.set_title("Background", fontsize=14)
 
         self.tv(options="log", ax=ax3)
         
