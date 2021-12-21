@@ -716,6 +716,22 @@ class ellOBJ:
         objCatal = root+'/objCatal'+suffix
         maskName = root+'/mask'+suffix_mask
         tmp = root+'/tmp'
+
+        name = self.name
+        objFits = self.inFolder+'{}/{}j.fits'.format(name,name)
+        script = """
+        rd 1 '"""+objFits+"""'
+        rd 2 """+maskName+"""
+        rd 3 """+modelName+"""
+        si 1 3
+        mi 1 2
+        wd 1 '"""+residName+"""'
+        q
+        """
+        self.run_monsta(script, root+'obj.pro', root+'obj.log')
+
+        print(root+'obj.pro')
+
         
         if smooth is not None:
             script = """
@@ -761,19 +777,19 @@ class ellOBJ:
         print(segment, objName, maskName)
        
         
-        ## Monsta script
-        script = """
-        rd 1 """+objName+"""
-        rd 5 './common.mask'
-        mi 1 5
-        wd 1 """+maskName+""" bitmap
-        tv 1 JPEG="""+maskName+""".jpg
-        q
+        # ## Monsta script
+        # script = """
+        # rd 1 """+objName+"""
+        # rd 5 './common.mask'
+        # mi 1 5
+        # wd 1 """+maskName+""" bitmap
+        # tv 1 JPEG="""+maskName+""".jpg
+        # q
         
-        """       
-        # print(root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
+        # """       
+        # # print(root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
 
-        self.run_monsta(script, root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
+        # self.run_monsta(script, root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
 
     def naive_Sextract(self, minArea=10, thresh=2, mask=None, smooth=None):
         
