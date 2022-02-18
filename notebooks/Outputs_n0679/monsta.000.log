@@ -1,0 +1,55 @@
+Autoscaling: threshold =   198.939         saturation =   60193.6    
+ FITCONTOUR: quitting, nused =            0
+ dlogI/dlogr forced to -2 at k =           2
+ dlogI/dlogr forced to -2 at k =           3
+ FITCONTOUR: quitting, nused =            0
+ dlogI/dlogr forced to -2 at k =           2
+ dlogI/dlogr forced to -2 at k =           3
+ FITCONTOUR: quitting, nused =            0
+ dlogI/dlogr forced to -2 at k =           2
+ dlogI/dlogr forced to -2 at k =           3
+ FITCONTOUR: quitting, nused =            0
+ dlogI/dlogr forced to -2 at k =           2
+ dlogI/dlogr forced to -2 at k =           3
+ FITCONTOUR: quitting, nused =            0
+ dlogI/dlogr forced to -2 at k =           2
+ dlogI/dlogr forced to -2 at k =           3
+ FITCONTOUR: quitting, nused =            0
+ dlogI/dlogr forced to -2 at k =           2
+ dlogI/dlogr forced to -2 at k =           3
+ FITCONTOUR: quitting, nused =            0
+ dlogI/dlogr forced to -2 at k =           2
+ dlogI/dlogr forced to -2 at k =           3
+ FITCONTOUR: quitting, nused =            0
+ dlogI/dlogr forced to -2 at k =           2
+ dlogI/dlogr forced to -2 at k =           3
+ FITCONTOUR: quitting, nused =            0
+ dlogI/dlogr forced to -2 at k =           2
+ dlogI/dlogr forced to -2 at k =           3
+ FITCONTOUR: quitting, nused =            0
+   r      x0      y0      I0    alpha  ellip I(3x)  A(3x)  I(4x)  A(4x) slope
+   9.0  564.69  562.98   1000.   3.60 0.178 0.0000   0.00 0.0000   0.00 -1.45
+ dlogI/dlogr forced to -2 at k =           2
+  12.4  897.28  193.88    458.  31.25 0.719 0.0660  41.99 0.0535  24.84 -2.00
+ dlogI/dlogr forced to -2 at k =           3
+  16.6  577.62  554.05 225831. 156.36 1.002 0.0040 118.67 0.0179   0.02 -2.00
+  21.8  564.46  563.32 275123.  16.31 0.163 0.0008  69.38 0.0011  44.11 -0.22
+  28.1  564.48  563.31 193380.  15.68 0.156 0.0010  88.51 0.0034  38.42 -1.52
+  35.8  564.48  563.32 128644.  14.19 0.151 0.0014  75.36 0.0034  41.60 -1.80
+  44.9  564.44  563.30  84929.  13.07 0.148 0.0007  97.51 0.0045  44.49 -1.85
+  55.6  564.25  563.36  59003.  12.86 0.147 0.0039  32.49 0.0044  51.13 -1.71
+  68.2  564.07  563.54  42548.  12.83 0.146 0.0019  52.93 0.0061  54.30 -1.66
+  82.8  564.25  563.77  30956.  12.76 0.147 0.0035  63.97 0.0115  46.46 -1.77
+  99.6  564.48  563.59  21730.  11.47 0.141 0.0032 116.75 0.0098  42.00 -2.05
+ 118.9  564.51  563.49  14785.  10.01 0.138 0.0052  39.15 0.0211  35.06 -2.22
+ 140.8  564.53  563.07  10375.   5.60 0.141 0.0074  65.96 0.0287  44.24 -2.09
+ 165.6  564.77  562.38   7586. 177.35 0.146 0.0086  18.23 0.0428  50.02 -1.86
+ 193.6  564.26  562.12   5865. 170.06 0.162 0.0070  41.79 0.0551  54.26 -1.66
+ 225.0  562.55  564.18   4593. 164.80 0.170 0.0170   8.75 0.0478  53.36 -1.66
+ 260.0  564.01  562.21   3613. 161.35 0.167 0.0071   0.97 0.0712  60.86 -2.01
+ Re =   122.8     NaN    Ie =  15152.9      NaN    Sky =      0.0      0.0
+ Synthesize image...        1025  by         1022
+Extrapolated outer isophote: r,f,sky,eps =    899.3    309.9      0.0    0.832
+     1707661  function evaluations,   1.63014746      per point
+Autoscaling: threshold =  -678.003         saturation =   703.535    
+Autoscaling: threshold =   3626.28         saturation =   65448.6    

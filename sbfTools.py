@@ -391,8 +391,10 @@ class ellOBJ:
     objRoot = './'
     inFolder = './'
     monsta = 'monsta'
+    config = './'
+
     
-    def __init__(self, name, outFolder=None, inFolder=None):
+    def __init__(self, name, outFolder=None, inFolder=None, configFolder='./'):
         
         if outFolder is None:
             outFolder = "Outputs_"+name
@@ -404,6 +406,8 @@ class ellOBJ:
 
         if inFolder is not None:
             self.inFolder = inFolder+'/'
+
+        self.config = config
         
         self.name = name
 
@@ -477,11 +481,18 @@ class ellOBJ:
         
         name = self.name
         root = self.objRoot
+        config = self.config
         
         catalName = root + self.catalName
         segmentation = root + 'segmentation.fits'
-        
-        cmd = 'sex -c wfc3j_sex.config '+self.inFolder+'{}/{}j.fits'.format(name,name)+' -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME '+segmentation+' -CATALOG_NAME ' + catalName
+
+        sex_config = config+'sextractor/wfc3j_sex.config'
+        PARAMETERS_NAME = config+'sextractor/sbf.param'
+        FILTER_NAME = config+'sextractor/gauss_2.0_5x5.conv'
+        STARNNW_NAME = config+'sextractor/default.nnw'
+
+       
+        cmd = 'sex -c ' + sex_config + ' '+self.inFolder+'{}/{}j.fits'.format(name,name)+' -CHECKIMAGE_TYPE SEGMENTATION -CHECKIMAGE_NAME '+segmentation+' -CATALOG_NAME ' + catalName + ' -PARAMETERS_NAME ' + PARAMETERS_NAME+ ' -FILTER_NAME ' + FILTER_NAME + ' -STARNNW_NAME ' + STARNNW_NAME
         
         # print(cmd)
         
@@ -755,14 +766,22 @@ class ellOBJ:
             
             """
             
-            self.run_monsta(script, root+'obj.pro', root+'obj.log')            
+            self.run_monsta(script, root+'obj.pro', root+'obj.log')    
+
+        config = self.config
+
+        sex_config = config+'sextractor/wfc3j.inpar'
+        PARAMETERS_NAME = config+'sextractor/sbf.param'
+        FILTER_NAME = config+'sextractor/gauss_2.0_5x5.conv'
+        STARNNW_NAME = config+'sextractor/default.nnw'        
         
-        sex_cmd = """sex """+residName+""" -c wfc3j.inpar -CHECKIMAGE_NAME """+segment
+        sex_cmd = """sex """+residName+""" -c w""" + sex_config + """ -CHECKIMAGE_NAME """+segment
         sex_cmd += " -CATALOG_NAME  "+objCatal
         sex_cmd += " -DETECT_MINAREA " +str(minArea)
         sex_cmd += " -DETECT_THRESH "+str(thresh)
         sex_cmd += " -ANALYSIS_THRESH "+str(thresh)
         sex_cmd += " -CHECKIMAGE_TYPE SEGMENTATION "
+        sex_cmd += ' -PARAMETERS_NAME ' + PARAMETERS_NAME+ ' -FILTER_NAME ' + FILTER_NAME + FILTER_NAME + ' -STARNNW_NAME ' + STARNNW_NAME
 
         if renuc is not None:
             sex_cmd += " -WEIGHT_IMAGE  "+variance
@@ -851,10 +870,16 @@ class ellOBJ:
         
         name = self.name
         root = self.objRoot
+        config = self.config
         fits_name = self.inFolder+'{}/{}j.fits'.format(name,name)
         odj_common = root+'/tmp'
         segmentation = root + 'back_mask.fits'
-        
+
+        sex_config = config+'sextractor/wfc3j_sex.config'
+        PARAMETERS_NAME = config+'sextractor/sbf.param'
+        FILTER_NAMEf = config+'sextractor/gauss_2.0_5x5.conv'
+        STARNNW_NAME = config+'sextractor/default.nnw'
+
         script = """
         rd 1 """+fits_name+"""
         rd 2 ./common.mask
@@ -865,8 +890,9 @@ class ellOBJ:
         """
         self.run_monsta(script, root+'obj.pro', root+'obj.log')  
             
-        cmd = 'sex -c wfc3j_sex.config '+odj_common
-        cmd += ' -BACK_SIZE 500 -DETECT_MINAREA 4 -DETECT_THRESH ' + str(thresh) + ' -CHECKIMAGE_TYPE "SEGMENTATION" -CHECKIMAGE_NAME '
+        cmd = 'sex -c ' + sex_config + ' '+odj_common
+        cmd += ' -BACK_SIZE 500 -DETECT_MINAREA 4 -DETECT_THRESH ' + str(thresh) + ' -CHECKIMAGE_TYPE "SEGMENTATION" -CHECKIMAGE_NAME ' + catalName + ' -PARAMETERS_NAME '+ PARAMETERS_NAME+ ' -FILTER_NAME ' + FILTER_NAME + ' -STARNNW_NAME ' + STARNNW_NAME
+
         cmd += segmentation
               
         xcmd(cmd + ' > '+root+'sextractor.log', verbose=False)
