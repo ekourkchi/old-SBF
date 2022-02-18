@@ -4,7 +4,7 @@
     rd 2 '{name}z.fits'
     clip 1 nan=0
     clip 2 nan=0
-    tv 1
+    !tv 1
     set nr=100/10$nint
     string nr '%i2.0' nr
     cop 3 1
@@ -26,8 +26,8 @@
 
     rd 7 Outputs_n0679//psg.obj
     rd 8 Outputs_n0679//psz.obj
-    tv 7
-    tv 8
+    !tv 7
+    !tv 8
     di 7 7
     di 8 8
     mi 8 7
