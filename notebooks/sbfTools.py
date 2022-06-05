@@ -15,9 +15,26 @@ from astropy import wcs
 from matplotlib import cm
 from matplotlib.colors import LogNorm
 
+import numpy
+from astropy.table import Table
+import requests
+from PIL import Image
+from io import BytesIO
+import pylab, os, sys
+
 import copy
 
 
+##############################################################
+
+def get_extinction(ra, dec):
+    URL = """http://ned.ipac.caltech.edu/ffs/sticky/CmdSrv?cmd=tableSave&request=%7B%22startIdx%22%3A0%2C%22pageSize%22%3A2147483647%2C%22filters%22%3A%22%22%2C%22source%22%3A%22http%3A%2F%2Fned.ipac.caltech.edu%2Fcgi-bin%2Fcalc%3Fin_csys%3DEquatorial%26out_csys%3DEquatorial%26in_equinox%3DJ2000.0%26out_equinox%3DJ2000.0%26obs_epoch%3D2000.0%26of%3Dxml_main%26ext%3D1%26lon%3D"""+str(ra)+"""d%26lat%3D"""+str(dec)+"""d%22%2C%22alt_source%22%3A%22http%3A%2F%2Fned.ipac.caltech.edu%2Fcgi-bin%2Fcalc%3Fin_csys%3DEquatorial%26out_csys%3DEquatorial%26in_equinox%3DJ2000.0%26out_equinox%3DJ2000.0%26obs_epoch%3D2000.0%26of%3Dxml_main%26ext%3D1%26lon%3D27.43241667d%26lat%3D35.78563889d%22%2C%22META_INFO%22%3A%7B%22title%22%3A%22extinctions%22%2C%22tbl_id%22%3A%22extinctions_table%22%2C%22col.Refcode.PrefWidth%22%3A%2220%22%2C%22col.Refcode%20of%20the%20publications.PrefWidth%22%3A%2228%22%2C%22col.Central%20Wavelength.FmtDisp%22%3A%22%25.2f%22%2C%22col.The%20Galactic%20extinction.FmtDisp%22%3A%22%25.3f%22%2C%22resultSetRequest%22%3A%22%7B%5C%22RequestClass%5C%22%3A%5C%22ServerRequest%5C%22%2C%5C%22META_INFO%5C%22%3A%7B%5C%22col.Refcode%20of%20the%20publications.PrefWidth%5C%22%3A%5C%2228%5C%22%2C%5C%22tbl_id%5C%22%3A%5C%22extinctions_table%5C%22%2C%5C%22col.Central%20Wavelength.FmtDisp%5C%22%3A%5C%22%25.2f%5C%22%2C%5C%22col.The%20Galactic%20extinction.FmtDisp%5C%22%3A%5C%22%25.3f%5C%22%2C%5C%22title%5C%22%3A%5C%22extinctions%5C%22%2C%5C%22col.Refcode.PrefWidth%5C%22%3A%5C%2220%5C%22%7D%2C%5C%22tbl_id%5C%22%3A%5C%22extinctions_table%5C%22%2C%5C%22startIdx%5C%22%3A0%2C%5C%22pageSize%5C%22%3A1000%2C%5C%22alt_source%5C%22%3A%5C%22http%3A%5C%5C%2F%5C%5C%2Fned.ipac.caltech.edu%5C%5C%2Fcgi-bin%5C%5C%2Fcalc%3Fin_csys%3DEquatorial%26out_csys%3DEquatorial%26in_equinox%3DJ2000.0%26out_equinox%3DJ2000.0%26obs_epoch%3D2000.0%26of%3Dxml_main%26ext%3D1%26lon%3D27.43241667d%26lat%3D35.78563889d%5C%22%2C%5C%22id%5C%22%3A%5C%22IpacTableFromSource%5C%22%2C%5C%22source%5C%22%3A%5C%22http%3A%5C%5C%2F%5C%5C%2Fned.ipac.caltech.edu%5C%5C%2Fcgi-bin%5C%5C%2Fcalc%3Fin_csys%3DEquatorial%26out_csys%3DEquatorial%26in_equinox%3DJ2000.0%26out_equinox%3DJ2000.0%26obs_epoch%3D2000.0%26of%3Dxml_main%26ext%3D1%26lon%3D27.43241667d%26lat%3D35.78563889d%5C%22%2C%5C%22ffSessionId%5C%22%3A%5C%22FF-Session-1647588578055%5C%22%7D%22%2C%22resultSetID%22%3A%22DATA%22%7D%2C%22id%22%3A%22IpacTableFromSource%22%2C%22RequestClass%22%3A%22ServerRequest%22%2C%22ffSessionId%22%3A%22FF-Session-1647588578055%22%2C%22inclCols%22%3A%22%5C%22Bandpass%5C%22%2C%5C%22Central%20Wavelength%5C%22%2C%5C%22The%20Galactic%20extinction%5C%22%2C%5C%22Refcode%20of%20the%20publications%5C%22%22%7D&file_name=extinctions&file_format=csv"""
+    cmd = 'curl -X "POST" "'+URL +'" > tmp.csv'
+    xcmd(cmd, verbose=False)
+    df = pd.read_csv("tmp.csv")
+    df[df.columns[:10]].head()
+
+    return df
 
 ##############################################################
 def set_axes(ax, xlim=None, ylim=None, fontsize=16, twinx=True, twiny=True, minor=True, inout='in'):
@@ -156,6 +173,116 @@ def xcmd(cmd, verbose=True):
         return output
 
 ##############################################################
+
+def getimages(ra,dec,size=240,filters="grizy"):
+    
+    """Query ps1filenames.py service to get a list of images
+    
+    ra, dec = position in degrees
+    size = image size in pixels (0.25 arcsec/pixel)
+    filters = string with filters to include
+    Returns a table with the results
+    """
+    
+    service = "https://ps1images.stsci.edu/cgi-bin/ps1filenames.py"
+    url = ("{service}?ra={ra}&dec={dec}&size={size}&format=fits"
+           "&filters={filters}").format(**locals())
+    table = Table.read(url, format='ascii')
+    return table
+
+
+def geturl(ra, dec, size=240, output_size=None, filters="grizy", format="jpg", color=False):
+    
+    """Get URL for images in the table
+    
+    ra, dec = position in degrees
+    size = extracted image size in pixels (0.25 arcsec/pixel)
+    output_size = output (display) image size in pixels (default = size).
+                  output_size has no effect for fits format images.
+    filters = string with filters to include
+    format = data format (options are "jpg", "png" or "fits")
+    color = if True, creates a color image (only for jpg or png format).
+            Default is return a list of URLs for single-filter grayscale images.
+    Returns a string with the URL
+    """
+    
+    if color and format == "fits":
+        raise ValueError("color images are available only for jpg or png formats")
+    if format not in ("jpg","png","fits"):
+        raise ValueError("format must be one of jpg, png, fits")
+    table = getimages(ra,dec,size=size,filters=filters)
+    url = ("https://ps1images.stsci.edu/cgi-bin/fitscut.cgi?"
+           "ra={ra}&dec={dec}&size={size}&format={format}").format(**locals())
+    if output_size:
+        url = url + "&output_size={}".format(output_size)
+    # sort filters from red to blue
+    flist = ["yzirg".find(x) for x in table['filter']]
+    table = table[numpy.argsort(flist)]
+    if color:
+        if len(table) > 3:
+            # pick 3 filters
+            table = table[[0,len(table)//2,len(table)-1]]
+        for i, param in enumerate(["red","green","blue"]):
+            url = url + "&{}={}".format(param,table['filename'][i])
+    else:
+        urlbase = url + "&red="
+        url = []
+        for filename in table['filename']:
+            url.append(urlbase+filename)
+    return url
+
+
+def getcolorim(ra, dec, size=240, output_size=None, filters="grizy", format="jpg"):
+    
+    """Get color image at a sky position
+    
+    ra, dec = position in degrees
+    size = extracted image size in pixels (0.25 arcsec/pixel)
+    output_size = output (display) image size in pixels (default = size).
+                  output_size has no effect for fits format images.
+    filters = string with filters to include
+    format = data format (options are "jpg", "png")
+    Returns the image
+    """
+    
+    if format not in ("jpg","png"):
+        raise ValueError("format must be jpg or png")
+    url = geturl(ra,dec,size=size,filters=filters,output_size=output_size,format=format,color=True)
+    r = requests.get(url)
+    im = Image.open(BytesIO(r.content))
+    return im
+
+
+def getgrayim(ra, dec, size=240, output_size=None, filter="g", format="jpg"):
+    
+    """Get grayscale image at a sky position
+    
+    ra, dec = position in degrees
+    size = extracted image size in pixels (0.25 arcsec/pixel)
+    output_size = output (display) image size in pixels (default = size).
+                  output_size has no effect for fits format images.
+    filter = string with filter to extract (one of grizy)
+    format = data format (options are "jpg", "png")
+    Returns the image
+    """
+    
+    if format not in ("jpg","png"):
+        raise ValueError("format must be jpg or png")
+    if filter not in list("grizy"):
+        raise ValueError("filter must be one of grizy")
+    
+#     print(ra,dec, size, filter)
+    
+    url = geturl(ra,dec,size=size,filters=filter,output_size=output_size,format=format)
+    
+#     print(url)
+    r = requests.get(url[0])
+    im = Image.open(BytesIO(r.content))
+
+    return im
+
+##############################################################
+
 
 def createDir(folderPath):
     """generating a directory/folder if it doesn't exist
@@ -403,7 +530,7 @@ class ellOBJ:
     config = './'
 
     
-    def __init__(self, name, outFolder=None, inFolder=None, config='./'):
+    def __init__(self, name, outFolder=None, inFolder=None, config='./', automatic=True):
         
         if outFolder is None:
             outFolder = "Outputs_"+name
@@ -420,23 +547,25 @@ class ellOBJ:
         
         self.name = name
 
-        try:
-            self.SExtract()
-        except:
-            print("Error: Could not run SExtractor on the file")
-            fits_file = self.inFolder+'{}/{}j.fits'.format(name,name)
-            if not os.path.exists(fits_file):
-                print("Couldn't find "+fits_file)
-            return
-        
+        if automatic:
+            try:
+                self.SExtract()
+            except:
+                print("Error: Could not run SExtractor on the file")
+                fits_file = self.inFolder+'{}/{}j.fits'.format(name,name)
+                if not os.path.exists(fits_file):
+                    print("Couldn't find "+fits_file)
+                return
+            
         hdu_list = fits.open(self.inFolder+'{}/{}j.fits'.format(name,name))
         image_data = hdu_list[0].data
         # w = wcs.WCS(hdu_list[0].header)
         self.x_max, self.y_max = image_data.shape
-                
-        self.backSextract()
+                    
+        if automatic:
+            self.backSextract()
 
-        self.r_max = int(min([self.x0, self.x_max-self.x0, self.y0, self.y_max-self.y0]))
+            self.r_max = int(min([self.x0, self.x_max-self.x0, self.y0, self.y_max-self.y0]))
         
     def tv_resid(self, model=0, ax=None, options="", additions=""):
         root = self.objRoot

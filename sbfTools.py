@@ -394,7 +394,7 @@ class ellOBJ:
     config = './'
 
     
-    def __init__(self, name, outFolder=None, inFolder=None, configFolder='./'):
+    def __init__(self, name, outFolder=None, inFolder=None, configFolder='./', automatic=True):
         
         if outFolder is None:
             outFolder = "Outputs_"+name
@@ -410,24 +410,28 @@ class ellOBJ:
         self.config = config
         
         self.name = name
-
-        try:
-            self.SExtract()
-        except:
-            print("Error: Could not run SExtractor on the file")
-            fits_file = self.inFolder+'{}/{}j.fits'.format(name,name)
-            if not os.path.exists(fits_file):
-                print("Couldn't find "+fits_file)
-            return
         
-        hdu_list = fits.open(self.inFolder+'{}/{}j.fits'.format(name,name))
-        image_data = hdu_list[0].data
-        # w = wcs.WCS(hdu_list[0].header)
-        self.x_max, self.y_max = image_data.shape
-                
-        self.backSextract()
+        if automatic:
+            try:
+                self.SExtract()
+            except:
+                print("Error: Could not run SExtractor on the file")
+                fits_file = self.inFolder+'{}/{}j.fits'.format(name,name)
+                if not os.path.exists(fits_file):
+                    print("Couldn't find "+fits_file)
+                return
+            
+            hdu_list = fits.open(self.inFolder+'{}/{}j.fits'.format(name,name))
+            image_data = hdu_list[0].data
+            # w = wcs.WCS(hdu_list[0].header)
+            self.x_max, self.y_max = image_data.shape
+                    
+            self.backSextract()
 
-        self.r_max = int(min([self.x0, self.x_max-self.x0, self.y0, self.y_max-self.y0]))
+            self.r_max = int(min([self.x0, self.x_max-self.x0, self.y0, self.y_max-self.y0]))
+
+
+            
         
     def tv_resid(self, model=0, ax=None, options="", additions=""):
         root = self.objRoot
