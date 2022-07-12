@@ -1,4 +1,4 @@
-import os, sys, string, math
+import os, sys, string, math, uuid, time
 import numpy as np
 from scipy.linalg import eigh
 from scipy.optimize import minimize_scalar
@@ -14,6 +14,9 @@ from astropy.io import fits
 from astropy import wcs
 from matplotlib import cm
 from matplotlib.colors import LogNorm
+from datetime import datetime
+import pickle
+import ipywidgets as widgets
 
 import numpy
 from astropy.table import Table
@@ -530,14 +533,35 @@ class ellOBJ:
     config = './'
 
     
-    def __init__(self, name, outFolder=None, inFolder=None, config='./', automatic=True):
-        
+
+    
+    def __init__(self, name, outFolder=None, inFolder=None, config='./', automatic=True, parent=None):
+
+
+
+
+        self.uuid = str(uuid.uuid4()).split("-")[-1]
+        self.parent_uuid = parent
+
+
+        self.params = None
+        self.slider_backSextract_thresh = None
+        self.slider_naive_minarea = None
+        self.slider_naive_thresh  = None
+        self.slider_naive_smooth  = None
+
+              
         if outFolder is None:
             outFolder = "Outputs_"+name
 
         
         createDir(outFolder)
-        self.objRoot = outFolder+'/'
+
+        objRoot = outFolder+'/'+name+'_'+self.uuid
+
+        createDir(objRoot)
+
+        self.objRoot = objRoot+'/'
         
 
         if inFolder is not None:
@@ -1003,7 +1027,7 @@ class ellOBJ:
         x0 = int(np.round(self.x0))
         y0 = int(np.round(self.y0))
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,4))
+        fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(16,4))
 
         im, header = imOpen(maskName)
         ax1.imshow(np.flipud(im))
@@ -1011,7 +1035,7 @@ class ellOBJ:
         mask2 = seg2mask(maskName, maskName, seg_num=im[x0,y0])      
         im, _ = imOpen(odj_common)
 
-        return ax1, ax2
+        return ax1, ax2, ax3, ax4
         
     def backSextract(self, thresh=0.03):
         
@@ -1191,11 +1215,11 @@ class ellOBJ:
     
     def plot_background(self):   
         
-        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(14,4))
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15,4))
 
         ## objects are masked, display background pixels
         ax1 = plot_2darray(self.masked_image, ax=ax1)
-        ax1.set_title(self.name, fontsize=14)
+        ax1.set_title("Back. Mask", fontsize=14)
         ax1.set_xlabel("X [pixel]", fontsize=12)
         ax1.set_ylabel("Y [pixel]", fontsize=12)
 
@@ -1207,9 +1231,359 @@ class ellOBJ:
         ax2.hist(self.back_pixels, bins=np.linspace(self.sky_med-3*self.sky_std, self.sky_med+3*self.sky_std, 10), density=True, color='g', alpha=0.7)
         ax2.set_xlabel("pixel value", fontsize=12)
         ax2.set_ylabel("frequency", fontsize=12)
-        ax2.set_title("Background", fontsize=14)
-
+        ax2.set_title("Back. Histogram", fontsize=14)
+        
         self.tv(options="log", ax=ax3)
+        ax3.set_title(self.name, fontsize=14)
         
-        return ax1, ax2, ax3
+        return fig, (ax1, ax2, ax3)
+
+    #########################################################
+    def plot_primary(self, pngName=None):
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,4))
+
+        ## Calculating the number of crossing ellipses, the generated model = 0, from previous linen_cross = Xellipses(obj.list_ellipses(model=0))
+        self.tv(options="log", ax=ax1)
+        self.plot_ellipse(model=0, ax=ax1, alpha=0.5, linewidth=1, edgecolor='r', facecolor='none')
+
+        n_cross = Xellipses(self.list_ellipses(model=0))
+
+
+        r0 = self.elliprof_param1["r0"]
+        c_kron = self.elliprof_param1["c_kron"]
+        sky_factor = self.elliprof_param1["sky_factor"]
+        k = self.elliprof_param1["k"]
+        option = self.elliprof_param1["options"]
+        r1 = self.outerR(c_kron)
+        nr = int(np.round((r1-r0)/k))
+        sky = int(sky_factor*self.sky_med)
+
+        print("N_cross: %d"%n_cross)   # No. of crossing ellipses
+        print("r0: %d"%r0)
+        print("r1: %d"%r1)
+        print("nr: %d"%nr)
+        print("sky: %d"%sky)
+
+        self.tv_mask(mask=1, ax=ax2)
+
+        if pngName is None:
+            pngName = self.objRoot+'/'+self.name+'_basic_model.png'
+        else:
+            pngName = self.objRoot+'/'+pngName
+
+        plt.savefig(pngName)
+        print("fig. name: ", pngName)
+
+        return (ax1, ax2)
+
+    #########################################################
+    def slider_back_sex(self):
+
+        if self.params is None:
+            self.params = {}
         
+        main_key = "backSextract"
+
+        if not main_key in self.params:
+            self.params[main_key] = {}
+        
+        if not "threshold" in self.params[main_key]:
+            self.params[main_key]["threshold"] = 0.03
+        
+        if not self.slider_backSextract_thresh is None:
+            self.params[main_key]["threshold"] = self.slider_backSextract_thresh.value
+
+        
+        slider_value = self.params[main_key]["threshold"]
+
+        slider_backSextract_thresh = widgets.FloatSlider(value=slider_value, \
+                                                    min=0.01, max=0.16, step=0.01, \
+                                                    description='Threshold')
+
+        self.slider_backSextract_thresh = slider_backSextract_thresh
+
+        return [slider_backSextract_thresh]
+
+    #########################################################
+    def plot_backsex(self, pngName=None):
+
+        self.params["backSextract"]["threshold"] = self.slider_backSextract_thresh.value
+
+        self.backSextract(thresh=self.params["backSextract"]["threshold"])
+        fig, [ax1, ax2, ax3] = self.plot_background()
+
+        if pngName is None:
+            pngName = self.objRoot+self.name+'_initial_back.png'
+        else:
+            pngName = self.objRoot+pngName
+
+        plt.savefig(pngName)
+        print("fig. name: ", pngName)
+
+        return (ax1, ax2, ax3)
+
+    #########################################################
+    def slider_naive_sex(self):
+
+        if self.params is None:
+            self.params = {}
+        
+        main_key = "naiveSextract"
+
+        if not main_key in self.params:
+            self.params[main_key] = {}
+
+        if not "minarea" in self.params[main_key]:
+            self.params[main_key]["minarea"] = 200     
+        if not "threshold" in self.params[main_key]:
+            self.params[main_key]["threshold"] = 3
+        if not "smooth" in self.params[main_key]:
+            self.params[main_key]["smooth"] = 5
+
+        if not self.slider_naive_minarea is None:
+            self.params[main_key]["minarea"] = self.slider_naive_minarea.value
+        if not self.slider_naive_thresh is None:
+            self.params[main_key]["threshold"] = self.slider_naive_thresh.value
+        if not self.slider_naive_smooth is None:
+            self.params[main_key]["smooth"] = self.slider_naive_smooth.value
+        
+        minarea = self.params[main_key]["minarea"]
+        threshold = self.params[main_key]["threshold"]
+        smooth = self.params[main_key]["smooth"]
+
+        slider_naive_minarea = widgets.FloatSlider(value=minarea, min=5, max=1000, step=1, description='Min_Area')
+        slider_naive_thresh  = widgets.FloatSlider(value=threshold, min=0.5, max=5, step=0.1, description='Threshold')
+        slider_naive_smooth  = widgets.FloatSlider(value=smooth, min=1, max=10, step=0.5, description='Smooth')
+
+        self.slider_naive_minarea = slider_naive_minarea
+        self.slider_naive_thresh  = slider_naive_thresh
+        self.slider_naive_smooth  = slider_naive_smooth
+
+        return [slider_naive_minarea, slider_naive_thresh, slider_naive_smooth]
+
+    #########################################################
+    def plot_naivesex(self, pngName=None):
+        
+        main_key = "naiveSextract"
+
+        self.params[main_key]["minarea"]   =  self.slider_naive_minarea.value
+        self.params[main_key]["threshold"] =  self.slider_naive_thresh.value
+        self.params[main_key]["smooth"]    =  self.slider_naive_smooth.value
+
+        minarea   = self.params[main_key]["minarea"]
+        threshold = self.params[main_key]["threshold"]
+        smooth    = self.params[main_key]["smooth"]
+
+        ax1, ax2, ax3, ax4 = self.naive_Sextract(minArea=minarea, thresh=threshold, \
+                                            mask=0, smooth=smooth)
+        ax1.set_title("Segmentation", fontsize=14)
+
+        self.addMasks(maskList=[0], mask=1)
+
+        ## improting Dmask and add it to the initial mask we find using 
+        ## a crude SExtractor run
+        Dmask =  self.inFolder+'{}/{}j.dmask'.format(self.name, self.name)
+        if os.path.exists(Dmask):
+            self.inputMaks(Dmask, mask=0)
+            self.addMasks(maskList=[0,1], mask=1)
+
+            im, h = self.maskOpen(mask=0)
+            ax3.imshow(np.flipud(im))
+            ax3.set_title("Dmask", fontsize=14)
+
+        else:
+            print(Dmask+" doesn't exist.")
+
+        im, h = self.maskOpen(mask=1)
+        ax2.imshow(np.flipud(im))
+        ax2.set_title("Mask 1", fontsize=14)
+
+        self.tv(options="log", ax=ax4)
+        ax4.set_title(self.name, fontsize=14)
+
+        if pngName is None:
+            pngName = self.objRoot+self.name+'_initial_mask.png'
+        else:
+            pngName = self.objRoot+pngName
+
+        plt.savefig(pngName)
+        print("fig. name: ", pngName)
+
+        return (ax1, ax2, ax3, ax4)
+    
+
+
+#########################################################
+## `get_RMS` 
+# Defining the `rms` of the flux deviations from the `r^1/4` profile, extrapolated in the outer regions of the target galaxy
+#########################################################
+def get_RMS(obj, r0, r1, nr, sky_factor, options=""):
+    '''
+    
+    Returns:
+        - rms: the rms of deviations
+        - n_cross: number of ellipses crossing each other
+    
+    '''
+    
+    sky = int(sky_factor*obj.sky_med)
+    n_cross = 0
+    
+    if obj.elliprof(r0, r1, nr=nr, sky=sky, niter=10, mask=1, 
+                    model_mask=0, model=1000, options=options) != 'OK':
+        n_cross+=1
+        
+    model = 1000 
+    n_cross += Xellipses(obj.list_ellipses(model=1000))
+    root = obj.objRoot
+    suffix = '.%03d'%model
+
+    ellipseFile = root+'/elliprof'+suffix
+    df = pd.read_csv(ellipseFile, delimiter=r"\s+", skiprows=7)
+    df = df.apply(pd.to_numeric, errors='coerce')
+    x = df.Rmaj**0.25
+    y = 2.5*np.log10(df.I0)
+
+    maxX = np.max(x)
+    minX = np.min(x)
+    dx = maxX-minX
+    x1 = 0.70*dx+minX
+    x2 = maxX-0.10*dx
+    x3 = maxX-0.10*dx
+    x0 = x[((x<x2) & (x>x1))]
+    y0 = y[((x<x2) & (x>x1))]
+
+    m, b = np.polyfit(x0, y0, 1)
+
+    x_data = x[((x>=x3))]
+    y_data = y[((x>=x3))]
+    y_model = m*x_data+b
+
+    rms = np.sqrt(np.mean((y_data.values-y_model.values)**2))
+    
+    return rms, n_cross
+
+#########################################################
+
+def get_f(obj, r0, r1, nr, options=""):
+    '''
+    
+    
+    Returns:
+        - func: a function that gets the sky_factor and returns the rms of deviations
+        This function in its heart uses function `get_RMS` 
+    
+    '''
+    
+    def func(sky_factor):
+
+        rms, n_cross = get_RMS(obj, r0, r1, nr, sky_factor, options=options)
+
+        sig = rms 
+
+        if sig>10 or np.isnan(sig) or n_cross>0:
+            sig = 10
+
+        return -sig
+    
+    return func
+
+#########################################################
+
+def plot4(obj):
+    
+    fig, ax = plt.subplots(2, 2, figsize=(10,10))
+
+    obj.tv_resid(model=0, ax = ax[0][0], options='sqrt')
+    Ell = ((obj.x0, obj.y0), 1.*obj.a, 1.*obj.b, obj.angle)
+    e = patches.Ellipse(Ell[0], width=2*Ell[1], height=2*Ell[2], angle=Ell[3], 
+                        alpha=0.5, linewidth=1, edgecolor='r', facecolor='none')
+    ax[0][0].add_patch(e)
+
+    obj.tv_mask(mask=2, ax = ax[0][1])
+    obj.plot_ellipse(model=0, ax=ax[0][1], alpha=0.5, linewidth=1, edgecolor='r', facecolor='none')
+
+
+
+
+    obj.tv(ax = ax[1][0], options='sqrt')
+    obj.tv_model(model=0, ax=ax[1,1], options='sqrt')
+
+
+    pngName = obj.objRoot+'/'+obj.name+'_initial_model.png'
+    plt.savefig(pngName)
+    print("fig. name: ", pngName)
+
+
+    resid = True
+
+    text=ax[1][1].text(0,0, "test", va="bottom", ha="left") 
+    def onclick(event):
+            global resid
+            tx = 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f' % (event.button, event.x, event.y, event.xdata, event.ydata)
+            text.set_text(tx)
+            if event.inaxes == ax[0,1]:
+                event.inaxes.set_title("Mask 2 (additional)")
+                root = obj.objRoot
+                segment = root+'/objCheck.000.segment'
+                objName = root+'/objCheck.000'
+                maskName = root+'/mask.002'
+
+                imarray, header = imOpen(segment)
+                i = int(event.xdata)
+                j = int(event.ydata)
+
+                n = imarray[j,i]
+                text.set_text(str(i)+' '+str(j)+' '+str(n))
+                imarray[(imarray==n)] = 0 
+                fits.writeto(segment, np.float32(imarray), header, overwrite=True)
+                seg2mask(segment, objName)
+                ## Monsta script
+                script = """
+                rd 1 """+objName+"""
+                rd 5 './common.mask'
+                mi 1 5
+                wd 1 """+maskName+""" bitmap
+                tv 1 JPEG="""+maskName+""".jpg
+                q
+
+                """       
+                obj.run_monsta(script, root+'monsta.pro', root+'monsta.log')
+    #             obj.tv_model(model=0, ax=ax[0,1], options='sqrt')
+                obj.tv_mask(mask=2, ax = ax[0][1])
+                draw()
+
+            if event.inaxes == ax[0,0]:
+                event.inaxes.set_title(resid)
+                if resid:
+                    obj.tv(ax = ax[0][0], options='sqrt')
+                    resid = False
+                else:
+                    obj.tv_resid(model=0, ax = ax[0][0], options='sqrt')
+                    resid = True
+                draw()
+
+
+    fig.canvas.callbacks.connect('button_press_event', onclick)
+    
+    return ax
+
+#########################################################
+
+def populate_dict(objDict, inDict):
+
+    if objDict is None:
+        objDict = {}
+    
+    for key in inDict:
+        objDict[key] = inDict[key]
+    
+    return objDict
+
+
+
+
+
+
+
