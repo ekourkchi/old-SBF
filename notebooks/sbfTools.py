@@ -415,7 +415,7 @@ def tv(fits_file, ax=None, options=""):
 
 ##############################################################
 
-def run_monsta(script, Monsta_pro, Monsta_log, monsta="monsta"):
+def run_monsta(script, Monsta_pro, Monsta_log, monsta="monsta", silent=False):
     
     with open(Monsta_pro, 'w') as f:
         f.write(script)
@@ -430,12 +430,15 @@ def run_monsta(script, Monsta_pro, Monsta_log, monsta="monsta"):
             text = f.read()
     Tsplit = text.upper().split()
     if "ERROR" in Tsplit or 'SEGMENTATION FAULT' in Tsplit:
-        print("===== MONSTA =====")
-        for i, line in enumerate(script.split('\n')):
-            print(f"{i+1:>4}{line}")
-        print("===================")
-        print(text)
-        return text
+        if not silent:
+            print("===== MONSTA =====")
+            for i, line in enumerate(script.split('\n')):
+                print(f"{i+1:>4}{line}")
+            print("===================")
+            print(text)
+            return text
+        else:
+            return '[Warning] MONSTA NOT OK !'
     else:
         return 'OK'
             
@@ -516,7 +519,7 @@ def Xellipses(ells):
 
 
 ##############################################################
-class ellOBJ:
+class SBFobject:
     
     x0 = 0
     y0 = 0
@@ -544,11 +547,8 @@ class ellOBJ:
         self.parent_uuid = parent
 
 
-        self.params = None
-        self.slider_backSextract_thresh = None
-        self.slider_naive_minarea = None
-        self.slider_naive_thresh  = None
-        self.slider_naive_smooth  = None
+        self.params = {}
+        self.widgets = {}
 
               
         if outFolder is None:
@@ -780,7 +780,8 @@ class ellOBJ:
     def elliprof(self, inner_r=5, outer_r=200, sky=None, 
                  cosnx="", k=None, 
                  nr=40, niter=10,
-                 model = 0, mask=None, options="", use_common=False, model_mask=None
+                 model = 0, mask=None, options="", use_common=False, model_mask=None,
+                 monsta_silent = False
                 ):
         
         root = self.objRoot
@@ -870,7 +871,7 @@ class ellOBJ:
 
         # print(Monsta_pro, Monsta_log)
         
-        return self.run_monsta(script, Monsta_pro, Monsta_log)
+        return self.run_monsta(script, Monsta_pro, Monsta_log, silent=monsta_silent)
         
     def objSExtract(self, model=0, smooth=None, minArea=10, thresh=2, mask=None, renuc=1):
         
@@ -1088,7 +1089,7 @@ class ellOBJ:
         return im, mask2
         
             
-    def run_monsta(self, script, Monsta_pro, Monsta_log):
+    def run_monsta(self, script, Monsta_pro, Monsta_log, silent=False):
 
         with open(Monsta_pro, 'w') as f:
             f.write(script)
@@ -1100,12 +1101,15 @@ class ellOBJ:
             text = f.read()
         Tsplit = text.upper().split()
         if "ERROR" in Tsplit or 'SEGMENTATION FAULT' in Tsplit:
-            print("===== MONSTA =====")
-            for i, line in enumerate(script.split('\n')):
-                print(f"{i+1:>4}{line}")
-            print("===================")
-            print(text)
-            return text
+            if not silent:
+                print("===== MONSTA =====")
+                for i, line in enumerate(script.split('\n')):
+                    print(f"{i+1:>4}{line}")
+                print("===================")
+                print(text)
+                return text
+            else:
+                return '[Warning] MONSTA NOT OK !'
         else:
             return "OK"
             
@@ -1239,25 +1243,34 @@ class ellOBJ:
         return fig, (ax1, ax2, ax3)
 
     #########################################################
-    def plot_primary(self, pngName=None):
+    def basic_elliprof(self, pngName=None):
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,4))
+        main_key = "basic_elliprof"
+
+        r0         = self.params[main_key]["r0"] = self.widgets[main_key+"_r0"].value
+        c_kron     = self.params[main_key]["c_kron"] = self.widgets[main_key+"_ckron"].value
+        r1         = self.outerR(c_kron)      
+        k          = self.params[main_key]["k_ellipse"] = self.widgets[main_key+"_k"].value
+        nr         = int(np.round((r1-r0)/k))
+        sky_factor = self.params[main_key][""] = self.widgets[main_key+"_skyfactor"].value
+
+        sky     = int(sky_factor*self.sky_med)
+        options = self.params[main_key]["option"] = self.widgets[main_key+"_option"].value
+
+
+        # input mask. Usually mask = 1 or any value chosen for the initial mask from the previous cell
+        # since we have not specify the model number, the generated model takes a value of `0`
+        msg = self.elliprof(r0, r1, nr=nr, sky=sky, niter=10, options=options, mask=1)
+
+
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16,4))
 
         ## Calculating the number of crossing ellipses, the generated model = 0, from previous linen_cross = Xellipses(obj.list_ellipses(model=0))
         self.tv(options="log", ax=ax1)
+        ax1.set_title(self.name, fontsize=14)
         self.plot_ellipse(model=0, ax=ax1, alpha=0.5, linewidth=1, edgecolor='r', facecolor='none')
 
         n_cross = Xellipses(self.list_ellipses(model=0))
-
-
-        r0 = self.elliprof_param1["r0"]
-        c_kron = self.elliprof_param1["c_kron"]
-        sky_factor = self.elliprof_param1["sky_factor"]
-        k = self.elliprof_param1["k"]
-        option = self.elliprof_param1["options"]
-        r1 = self.outerR(c_kron)
-        nr = int(np.round((r1-r0)/k))
-        sky = int(sky_factor*self.sky_med)
 
         print("N_cross: %d"%n_cross)   # No. of crossing ellipses
         print("r0: %d"%r0)
@@ -1266,6 +1279,10 @@ class ellOBJ:
         print("sky: %d"%sky)
 
         self.tv_mask(mask=1, ax=ax2)
+        ax2.set_title("Mask 1", fontsize=14)
+
+        self.tv_resid(model=0, ax = ax3, options='sqrt')
+        ax3.set_title("Residual", fontsize=14)
 
         if pngName is None:
             pngName = self.objRoot+'/'+self.name+'_basic_model.png'
@@ -1280,37 +1297,23 @@ class ellOBJ:
     #########################################################
     def slider_back_sex(self):
 
-        if self.params is None:
-            self.params = {}
-        
         main_key = "backSextract"
 
-        if not main_key in self.params:
-            self.params[main_key] = {}
-        
-        if not "threshold" in self.params[main_key]:
-            self.params[main_key]["threshold"] = 0.03
-        
-        if not self.slider_backSextract_thresh is None:
-            self.params[main_key]["threshold"] = self.slider_backSextract_thresh.value
-
-        
-        slider_value = self.params[main_key]["threshold"]
-
-        slider_backSextract_thresh = widgets.FloatSlider(value=slider_value, \
-                                                    min=0.01, max=0.16, step=0.01, \
-                                                    description='Threshold')
-
-        self.slider_backSextract_thresh = slider_backSextract_thresh
-
-        return [slider_backSextract_thresh]
+        s = self.add_widget(main_key, "threshold", "backSextract_thresh", \
+                                        params={"default" : 0.03,
+                                            "min" : 0.01 , 
+                                            "max" : 0.16,
+                                            "step": 0.01,
+                                            "description" : "Threshold"})
+     
+        return s
 
     #########################################################
     def plot_backsex(self, pngName=None):
 
-        self.params["backSextract"]["threshold"] = self.slider_backSextract_thresh.value
+        thresh = self.params["backSextract"]["threshold"] = self.widgets["backSextract_thresh"].value
 
-        self.backSextract(thresh=self.params["backSextract"]["threshold"])
+        self.backSextract(thresh=thresh)
         fig, [ax1, ax2, ax3] = self.plot_background()
 
         if pngName is None:
@@ -1324,56 +1327,72 @@ class ellOBJ:
         return (ax1, ax2, ax3)
 
     #########################################################
-    def slider_naive_sex(self):
-
-        if self.params is None:
-            self.params = {}
-        
-        main_key = "naiveSextract"
+    def add_widget(self, main_key, second_key, widget_name, \
+                                        params={}, widget_type="slider"
+                                        ):
 
         if not main_key in self.params:
             self.params[main_key] = {}
-
-        if not "minarea" in self.params[main_key]:
-            self.params[main_key]["minarea"] = 200     
-        if not "threshold" in self.params[main_key]:
-            self.params[main_key]["threshold"] = 3
-        if not "smooth" in self.params[main_key]:
-            self.params[main_key]["smooth"] = 5
-
-        if not self.slider_naive_minarea is None:
-            self.params[main_key]["minarea"] = self.slider_naive_minarea.value
-        if not self.slider_naive_thresh is None:
-            self.params[main_key]["threshold"] = self.slider_naive_thresh.value
-        if not self.slider_naive_smooth is None:
-            self.params[main_key]["smooth"] = self.slider_naive_smooth.value
         
-        minarea = self.params[main_key]["minarea"]
-        threshold = self.params[main_key]["threshold"]
-        smooth = self.params[main_key]["smooth"]
+        if not second_key in self.params[main_key]:
+            self.params[main_key][second_key] = params["default"] 
 
-        slider_naive_minarea = widgets.FloatSlider(value=minarea, min=5, max=1000, step=1, description='Min_Area')
-        slider_naive_thresh  = widgets.FloatSlider(value=threshold, min=0.5, max=5, step=0.1, description='Threshold')
-        slider_naive_smooth  = widgets.FloatSlider(value=smooth, min=1, max=10, step=0.5, description='Smooth')
+        if widget_name in self.widgets:
+            self.params[main_key][second_key] = self.widgets[widget_name].value
 
-        self.slider_naive_minarea = slider_naive_minarea
-        self.slider_naive_thresh  = slider_naive_thresh
-        self.slider_naive_smooth  = slider_naive_smooth
+        value = self.params[main_key][second_key]
 
-        return [slider_naive_minarea, slider_naive_thresh, slider_naive_smooth]
+        try:
+            if widget_type == "slider":
+                my_widget = widgets.FloatSlider(value=value, min=params["min"], max=params["max"], step=params["step"], description=params["description"])
+            elif widget_type == "dropdown":
+                my_widget = widgets.Dropdown(value=value, options=params["options"], description=params["description"])
+            else:
+                return None
+        except:
+            return None
+
+        self.widgets[widget_name] = my_widget
+
+
+        return [my_widget]
+
+    #########################################################
+    def slider_naive_sex(self):
+
+        main_key = "naiveSextract"
+
+        s = self.add_widget(main_key, "minarea", "naive_minarea", 
+                                        params={"default" : 200,
+                                            "min" : 5 , 
+                                            "max" : 1000,
+                                            "step": 1,
+                                            "description" : "Min_Area"})
+
+        s += self.add_widget(main_key, "threshold", "naive_thresh", 
+                                        params={"default" : 3,
+                                            "min" : 0.5 , 
+                                            "max" : 5,
+                                            "step": 0.1,
+                                            "description" : "Threshold"})
+
+        s += self.add_widget(main_key, "smooth", "naive_smooth", 
+                                        params={"default" : 5,
+                                            "min" : 1 , 
+                                            "max" : 10,
+                                            "step": 0.5,
+                                            "description" : "Smooth"})
+        
+        return s
 
     #########################################################
     def plot_naivesex(self, pngName=None):
         
         main_key = "naiveSextract"
 
-        self.params[main_key]["minarea"]   =  self.slider_naive_minarea.value
-        self.params[main_key]["threshold"] =  self.slider_naive_thresh.value
-        self.params[main_key]["smooth"]    =  self.slider_naive_smooth.value
-
-        minarea   = self.params[main_key]["minarea"]
-        threshold = self.params[main_key]["threshold"]
-        smooth    = self.params[main_key]["smooth"]
+        minarea = self.params[main_key]["minarea"]   =  self.widgets["naive_minarea"].value
+        threshold = self.params[main_key]["threshold"] =  self.widgets["naive_thresh"].value
+        smooth = self.params[main_key]["smooth"]    =  self.widgets["naive_smooth"].value
 
         ax1, ax2, ax3, ax4 = self.naive_Sextract(minArea=minarea, thresh=threshold, \
                                             mask=0, smooth=smooth)
@@ -1412,9 +1431,402 @@ class ellOBJ:
 
         return (ax1, ax2, ax3, ax4)
     
+   #########################################################
+    def basic_elliprof_widget(self):
+
+        main_key = "basic_elliprof"
+
+        s = self.add_widget(main_key, "r0", main_key+"_r0", 
+                                        params={"default" : 9,
+                                            "min" : 3 , 
+                                            "max" : 200,
+                                            "step": 1,
+                                            "description" : "r0 [pixel]"})
+
+
+        s += self.add_widget(main_key, "c_kron", main_key+"_ckron", 
+                                params={"default" : 2.5,
+                                    "min" : 0.5 , 
+                                    "max" : 7,
+                                    "step": 0.1,
+                                    "description" : "Kron_factor"})
+
+        s += self.add_widget(main_key, "sky_factor", main_key+"_skyfactor", 
+                                params={"default" : 0.9,
+                                    "min" : 0.1, 
+                                    "max" : 1.2,
+                                    "step": 0.05,
+                                    "description" : "Sky_factor"})
+
+        s += self.add_widget(main_key, "k_ellipse", main_key+"_k", 
+                                params={"default" : 15,
+                                    "min" : 5, 
+                                    "max" : 50,
+                                    "step": 1,
+                                    "description" : "k"})
+
+        s += self.add_widget(main_key, "option", main_key+"_option", 
+                                params={
+                                    "options" : ['COS3X=0', 
+                                                'COS3X=1', 
+                                                'COS3X=2', 
+                                                'COS4X=1', 
+                                                'COS4X=2', 
+                                                'COS3X=-1', 
+                                                'COS3X=-2'],
+                                    "default" : "COS3X=0", 
+                                    "description" : "Mode"}, widget_type="dropdown")
+
+
+        
+        return s
+
+#########################################################
+
+   #########################################################
+    def second_elliprof_widget(self):
+
+        main_key  = "second_elliprof"
+        basic_key = "basic_elliprof"
+
+        s1 = self.add_widget(main_key, "r0", main_key+"_r0", 
+                                        params={"default" : self.params[basic_key]["r0"],
+                                            "min" : 3 , 
+                                            "max" : 200,
+                                            "step": 1,
+                                            "description" : "r0 [pixel]"})
+
+
+        s1 += self.add_widget(main_key, "c_kron", main_key+"_ckron", 
+                                params={"default" : self.params[basic_key]["c_kron"],
+                                    "min" : 0.5 , 
+                                    "max" : 7,
+                                    "step": 0.1,
+                                    "description" : "Kron_factor"})
+
+        s1 += self.add_widget(main_key, "sky_factor", main_key+"_skyfactor", 
+                                params={"default" : self.params[basic_key]["sky_factor"],
+                                    "min" : 0.1, 
+                                    "max" : 1.2,
+                                    "step": 0.05,
+                                    "description" : "Sky_factor"})
+
+        s1 += self.add_widget(main_key, "k_ellipse", main_key+"_k", 
+                                params={"default" : self.params[basic_key]["k_ellipse"],
+                                    "min" : 5, 
+                                    "max" : 50,
+                                    "step": 1,
+                                    "description" : "k"})
+
+        s1 += self.add_widget(main_key, "option", main_key+"_option", 
+                                params={
+                                    "options" : ['COS3X=0', 
+                                                'COS3X=1', 
+                                                'COS3X=2', 
+                                                'COS4X=1', 
+                                                'COS4X=2', 
+                                                'COS3X=-1', 
+                                                'COS3X=-2'],
+                                    "default" : self.params[basic_key]["option"], 
+                                    "description" : "Mode"}, widget_type="dropdown")
+
+
+        s2 = self.add_widget(main_key, "minarea", main_key+"_minarea", 
+                                        params={"default" : 300,
+                                            "min" : 5 , 
+                                            "max" : 1000,
+                                            "step": 1,
+                                            "description" : "Min_Area"})
+
+        s2 += self.add_widget(main_key, "threshold", main_key+"_thresh", 
+                                        params={"default" : 3,
+                                            "min" : 0.5 , 
+                                            "max" : 5,
+                                            "step": 0.1,
+                                            "description" : "Threshold"})
+
+        s2 += self.add_widget(main_key, "smooth", main_key+"_smooth", 
+                                        params={"default" : 5,
+                                            "min" : 1 , 
+                                            "max" : 10,
+                                            "step": 0.5,
+                                            "description" : "Smooth"})
+
+
+        s2 += self.add_widget(main_key, "renuc", main_key+"_renuc", 
+                                        params={"default" : 1,
+                                            "min" : 1 , 
+                                            "max" : 5,
+                                            "step": 0.5,
+                                            "description" : "Renuc"})
+        
+        return s1, s2
+
+#########################################################
+    def second_elliprof(self, pngName=None):
+
+        main_key = "second_elliprof"
+
+        r0         = self.params[main_key]["r0"] = self.widgets[main_key+"_r0"].value
+        c_kron     = self.params[main_key]["c_kron"] = self.widgets[main_key+"_ckron"].value
+        r1         = self.outerR(c_kron)      
+        k          = self.params[main_key]["k_ellipse"] = self.widgets[main_key+"_k"].value
+        nr         = int(np.round((r1-r0)/k))
+        sky_factor = self.params[main_key][""] = self.widgets[main_key+"_skyfactor"].value
+
+        sky     = int(sky_factor*self.sky_med)
+        options = self.params[main_key]["option"] = self.widgets[main_key+"_option"].value
+
+        minarea = self.params[main_key]["minarea"]   =  self.widgets[main_key+"_minarea"].value
+        threshold = self.params[main_key]["threshold"] =  self.widgets[main_key+"_thresh"].value
+        smooth = self.params[main_key]["smooth"]    =  self.widgets[main_key+"_smooth"].value
+        renuc = self.params[main_key]["renuc"]    =  self.widgets[main_key+"_renuc"].value
+
+
+        ## using mask=1  --> primary mask
+        ## generate model = 0   
+        ## uses model_mask for the masked regions
+        self.elliprof(r0, r1, nr=nr, sky=self.sky_med*sky_factor, niter=50, mask=1, model_mask=0, options=options)
+
+        # using residuals of model 0 --> mask 2
+        self.objSExtract(model=0, smooth=smooth, minArea=minarea, thresh=threshold, mask=2, renuc=renuc) 
+
+        # plotting model 0
+
+        fig, ax = plt.subplots(2, 2, figsize=(13,13))
+
+        self.tv_resid(model=0, ax = ax[0][0], options='sqrt')
+        Ell = ((self.x0, self.y0), 1.*self.a, 1.*self.b, self.angle)
+        e = patches.Ellipse(Ell[0], width=2*Ell[1], height=2*Ell[2], angle=Ell[3], 
+                            alpha=0.5, linewidth=1, edgecolor='r', facecolor='none')
+        ax[0][0].add_patch(e)
+        ax[0,0].set_title("Residual")
+
+        self.tv_mask(mask=2, ax = ax[0][1])
+        self.plot_ellipse(model=0, ax=ax[0][1], alpha=0.5, linewidth=1, edgecolor='r', facecolor='none')
+
+
+
+
+        self.tv(ax = ax[1][0], options='sqrt')
+        ax[1][0].set_title(self.name, fontsize=14)
+        self.tv_model(model=0, ax=ax[1,1], options='sqrt')
+        ax[1,1].set_title("Model")
+
+        pngName = self.objRoot+'/'+self.name+'_initial_model.png'
+        plt.savefig(pngName)
+        print("fig. name: ", pngName)
+
+        ax[0,1].set_title("Mask 2 (additional)")
+
+
+        resid = True
+
+        text=ax[1][1].text(0,0, "test", va="bottom", ha="left") 
+        def onclick(event):
+                global resid
+                tx = 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f' % (event.button, event.x, event.y, event.xdata, event.ydata)
+                text.set_text(tx)
+                if event.inaxes == ax[0,1]:
+                    event.inaxes.set_title("Mask 2 (additional)")
+                    root = self.objRoot
+                    segment = root+'/objCheck.000.segment'
+                    objName = root+'/objCheck.000'
+                    maskName = root+'/mask.002'
+
+                    imarray, header = imOpen(segment)
+                    i = int(event.xdata)
+                    j = int(event.ydata)
+
+                    n = imarray[j,i]
+                    text.set_text(str(i)+' '+str(j)+' '+str(n))
+                    imarray[(imarray==n)] = 0 
+                    fits.writeto(segment, np.float32(imarray), header, overwrite=True)
+                    seg2mask(segment, objName)
+                    ## Monsta script
+                    script = """
+                    rd 1 """+objName+"""
+                    rd 5 './common.mask'
+                    mi 1 5
+                    wd 1 """+maskName+""" bitmap
+                    tv 1 JPEG="""+maskName+""".jpg
+                    q
+
+                    """       
+                    self.run_monsta(script, root+'monsta.pro', root+'monsta.log')
+        #             self.tv_model(model=0, ax=ax[0,1], options='sqrt')
+                    self.tv_mask(mask=2, ax = ax[0][1])
+                    draw()
+
+                if event.inaxes == ax[0,0]:
+                    event.inaxes.set_title(resid)
+                    if resid:
+                        self.tv(ax = ax[0][0], options='sqrt')
+                        resid = False
+                    else:
+                        self.tv_resid(model=0, ax = ax[0][0], options='sqrt')
+                        resid = True
+                    draw()
+
+
+        fig.canvas.callbacks.connect('button_press_event', onclick)
+        
+        return ax
+
+
+
 
 
 #########################################################
+    def optimize_sky_factor(self, sky_factor, r0, r1, nr, options="",  \
+                        mask=1, model_mask=0, n_repeat=25, model=0, verbose=False):
+    
+        First = True
+
+        for i in range(n_repeat):
+
+            sky = sky_factor*self.sky_med
+
+            if self.elliprof(r0, r1, nr=nr, sky=sky, niter=10, 
+                            mask=mask, 
+                            model_mask=model_mask, 
+                            model=model, 
+                            monsta_silent = True,
+                        ) != 'OK':
+                return 0
+
+            resid_name = self.objRoot+"resid"+'.%03d'%model
+            back_mask = self.objRoot+"back_mask.fits"
+
+            imarray, header = imOpen(resid_name)
+            mskarray, header = imOpen(back_mask)
+
+            masked_image = imarray*mskarray
+
+
+            a = masked_image
+            a = a[(a!=0)]
+            std = np.std(a)
+            mean = np.mean(a)
+
+            a = a[((a>mean-3.*std)&(a<mean+3.*std))]
+
+            median = np.median(a)
+            mean = np.mean(a)
+            std = np.std(a)
+
+            sky_factor = median/self.sky_med + sky_factor
+
+            abs_median = np.abs(median)
+            if First:
+                min_absmed = abs_median
+                min_factor = sky_factor
+                min_med = median 
+                First = False
+            elif abs_median<min_absmed:
+                min_absmed = abs_median
+                min_factor = sky_factor
+                min_med = median       
+
+
+            if i%5==0 and verbose:
+                print("%02d median:%.2f factor:%.4f"%(i, median, sky_factor))
+
+        if verbose:
+            print("Optimum --- median:%.2f factor:%.4f"%(min_med, min_factor))
+        
+        
+        ## Finally generate a model for the optimum sky_factor
+        self.elliprof(r0, r1, nr=nr, sky=min_factor*self.sky_med, niter=10, mask=mask, 
+                    model_mask=model_mask, model=model)
+    
+        return min_factor
+
+
+#########################################################
+#########################################################
+    def plot_profile(self, sky_factor, r0, r1, nr, options="", mask=1, model_mask=0):
+
+        # using final mask = 1 --> model 0 
+        self.elliprof(r0, r1, nr=nr, sky=self.sky_med*sky_factor, niter=10, 
+                        mask=mask, model_mask=model_mask, options=options)
+
+        model = 0
+        root = self.objRoot
+        suffix = '.%03d'%model
+
+        ellipseFile = root+'/elliprof'+suffix
+        df = pd.read_csv(ellipseFile, delimiter=r"\s+", skiprows=7)
+        df = df.apply(pd.to_numeric, errors='coerce')
+
+        # fig, ax = plt.subplots(1,1, figsize=(7,6))
+        fig, (ax, ax2) = plt.subplots(1, 2, figsize=(12,5))
+
+        x = df.Rmaj**0.25
+        y = 2.5*np.log10(df.I0)
+        ax.plot(x, y, '.')
+
+        ax.set_xlabel(r"$r^{1/4}$"+" [pixel]", fontsize=16)
+        ax.set_ylabel(r"surface brightness"+" [mag]", fontsize=16)
+
+        maxX = np.max(x)
+        minX = np.min(x)
+        dx = maxX-minX
+        x1 = 0.70*dx+minX
+        x2 = maxX-0.10*dx
+        x0 = x[((x<x2) & (x>x1))]
+        y0 = y[((x<x2) & (x>x1))]
+        ax.plot(x0, y0, 'ko', mfc='none')
+
+        m, b = np.polyfit(x0, y0, 1)
+
+        xrange = np.linspace(x1-0.2*dx, maxX+0.1*dx, 100)
+        yrange = m*xrange+b
+
+        ax.plot(xrange, yrange, 'r:')
+        set_axes(ax, fontsize=14)
+
+        ax.set_title(self.name, fontsize=14, color='maroon')
+        ##################################################
+        self.tv_resid(model=0, options='sqrt', ax=ax2)
+        self.plot_ellipse(model=0, ax=ax2, alpha=0.5, linewidth=1, edgecolor='r', facecolor='none')
+        n_cross = Xellipses(self.list_ellipses(model=0))
+        print("No. of crossing ellipses: %d"%n_cross)
+
+
+        ## center, Smajor, Smainor, angle
+        Ell = make_Ellipse((self.x0, self.y0), min(x0)**4, min(x0)**4, 0)
+        e = patches.Ellipse(Ell[0], width=2*Ell[1], height=2*Ell[2], angle=Ell[3], 
+                            alpha=0.5, linewidth=1, edgecolor='yellow', facecolor='none')
+        ax2.add_patch(e)
+
+        Ell = make_Ellipse((self.x0, self.y0), max(x0)**4, max(x0)**4, 0)
+        e = patches.Ellipse(Ell[0], width=2*Ell[1], height=2*Ell[2], angle=Ell[3], 
+                            alpha=0.5, linewidth=1, edgecolor='yellow', facecolor='none')
+        ax2.add_patch(e)
+
+
+        pngName = self.objRoot+self.name+'_light_profile.png'
+        plt.savefig(pngName)
+        print("fig. name: ", pngName)    
+
+        csv_name = self.objRoot+self.name+'_light_profile.csv'
+        df.to_csv(csv_name)
+        print("profile table name: ", csv_name) 
+
+        print(df.head())
+
+
+        return (ax, ax2)
+
+
+
+#########################################################
+
+#########################################################
+
+
+
 ## `get_RMS` 
 # Defining the `rms` of the flux deviations from the `r^1/4` profile, extrapolated in the outer regions of the target galaxy
 #########################################################
@@ -1491,83 +1903,7 @@ def get_f(obj, r0, r1, nr, options=""):
 
 #########################################################
 
-def plot4(obj):
     
-    fig, ax = plt.subplots(2, 2, figsize=(10,10))
-
-    obj.tv_resid(model=0, ax = ax[0][0], options='sqrt')
-    Ell = ((obj.x0, obj.y0), 1.*obj.a, 1.*obj.b, obj.angle)
-    e = patches.Ellipse(Ell[0], width=2*Ell[1], height=2*Ell[2], angle=Ell[3], 
-                        alpha=0.5, linewidth=1, edgecolor='r', facecolor='none')
-    ax[0][0].add_patch(e)
-
-    obj.tv_mask(mask=2, ax = ax[0][1])
-    obj.plot_ellipse(model=0, ax=ax[0][1], alpha=0.5, linewidth=1, edgecolor='r', facecolor='none')
-
-
-
-
-    obj.tv(ax = ax[1][0], options='sqrt')
-    obj.tv_model(model=0, ax=ax[1,1], options='sqrt')
-
-
-    pngName = obj.objRoot+'/'+obj.name+'_initial_model.png'
-    plt.savefig(pngName)
-    print("fig. name: ", pngName)
-
-
-    resid = True
-
-    text=ax[1][1].text(0,0, "test", va="bottom", ha="left") 
-    def onclick(event):
-            global resid
-            tx = 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f' % (event.button, event.x, event.y, event.xdata, event.ydata)
-            text.set_text(tx)
-            if event.inaxes == ax[0,1]:
-                event.inaxes.set_title("Mask 2 (additional)")
-                root = obj.objRoot
-                segment = root+'/objCheck.000.segment'
-                objName = root+'/objCheck.000'
-                maskName = root+'/mask.002'
-
-                imarray, header = imOpen(segment)
-                i = int(event.xdata)
-                j = int(event.ydata)
-
-                n = imarray[j,i]
-                text.set_text(str(i)+' '+str(j)+' '+str(n))
-                imarray[(imarray==n)] = 0 
-                fits.writeto(segment, np.float32(imarray), header, overwrite=True)
-                seg2mask(segment, objName)
-                ## Monsta script
-                script = """
-                rd 1 """+objName+"""
-                rd 5 './common.mask'
-                mi 1 5
-                wd 1 """+maskName+""" bitmap
-                tv 1 JPEG="""+maskName+""".jpg
-                q
-
-                """       
-                obj.run_monsta(script, root+'monsta.pro', root+'monsta.log')
-    #             obj.tv_model(model=0, ax=ax[0,1], options='sqrt')
-                obj.tv_mask(mask=2, ax = ax[0][1])
-                draw()
-
-            if event.inaxes == ax[0,0]:
-                event.inaxes.set_title(resid)
-                if resid:
-                    obj.tv(ax = ax[0][0], options='sqrt')
-                    resid = False
-                else:
-                    obj.tv_resid(model=0, ax = ax[0][0], options='sqrt')
-                    resid = True
-                draw()
-
-
-    fig.canvas.callbacks.connect('button_press_event', onclick)
-    
-    return ax
 
 #########################################################
 
