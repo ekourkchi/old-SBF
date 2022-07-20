@@ -1,4 +1,4 @@
-import os, sys, string, math, uuid, time
+import os, sys, string, math, uuid, time, json
 import numpy as np
 from scipy.linalg import eigh
 from scipy.optimize import minimize_scalar
@@ -17,6 +17,7 @@ from matplotlib.colors import LogNorm
 from datetime import datetime
 import pickle
 import ipywidgets as widgets
+from os.path import exists
 
 import numpy
 from astropy.table import Table
@@ -517,6 +518,81 @@ def Xellipses(ells):
 
 ##############################################################
 
+def open_log_df(logName):
+
+
+    logName = "Outputs_u03396/u03396_model_log.csv"
+
+    with open(logName, "r") as f:
+        lines = f.readlines()
+        
+    if exists("./log.tmp"):
+        #print("backing up log.temp")
+        xcmd("cp ./log.tmp ./log.tmp.back", verbose=False)
+        xcmd("rm ./log.tmp", verbose=False)
+
+    with open("./log.tmp", "w") as f:
+        
+        First = True
+        for l in lines:
+            if "######" in l:
+                if First:
+                    First=False
+                    continue
+                else:
+                    break
+            else:
+                f.write(l)
+
+    df = pd.read_csv("./log.tmp")
+    for col in df.columns:
+        df = df.rename(columns={col:col.strip()})
+
+    for col in df.columns:
+        df[col] = df[col].apply(lambda x: x.strip())
+        
+    df.set_index("index", inplace=True)
+    df.index = [x.strip() for x in df.index]
+    
+    return df
+
+
+def get_obj_params(df):
+
+    params = {}
+
+    main_key = "backSextract"
+    params[main_key] = {}
+    params[main_key]["threshold"] = np.float(df.loc["BXT"].value.strip())
+
+    main_key = "naiveSextract"
+    params[main_key] = {}
+    params[main_key]["minarea"]   = np.float(df.loc["NXM"].value.strip())
+    params[main_key]["threshold"] = np.float(df.loc["NXT"].value.strip())
+    params[main_key]["smooth"]    = np.float(df.loc["NXS"].value.strip())
+
+    main_key = "basic_elliprof"
+    params[main_key] = {}
+    params[main_key]["r0"]         = np.float(df.loc["BER"].value.strip())
+    params[main_key]["c_kron"]     = np.float(df.loc["BEC"].value.strip())
+    params[main_key]["sky_factor"] = np.float(df.loc["BES"].value.strip())
+    params[main_key]["k_ellipse"]  = np.float(df.loc["BEK"].value.strip())
+    params[main_key]["option"]     = df.loc["BEO"].value.strip()
+
+    
+    main_key = "second_elliprof"
+    params[main_key] = {}
+    params[main_key]["r0"]         = np.float(df.loc["SER"].value.strip())
+    params[main_key]["c_kron"]     = np.float(df.loc["SEC"].value.strip())
+    params[main_key]["sky_factor"] = np.float(df.loc["SEF"].value.strip())
+    params[main_key]["k_ellipse"] = np.float(df.loc["SEK"].value.strip())
+    params[main_key]["option"]    = df.loc["SEO"].value.strip()
+    params[main_key]["minarea"]   = np.float(df.loc["SEM"].value.strip())
+    params[main_key]["threshold"] = np.float(df.loc["SET"].value.strip())
+    params[main_key]["smooth"]    = np.float(df.loc["SES"].value.strip())
+    params[main_key]["renuc"]     = np.float(df.loc["SEN"].value.strip())
+
+    return params
 
 ##############################################################
 class SBFobject:
@@ -538,38 +614,54 @@ class SBFobject:
     
 
     
-    def __init__(self, name, outFolder=None, inFolder=None, config='./', automatic=True, parent=None):
+    def __init__(self, name, outFolder=None, inFolder=None, 
+            config='./', automatic=True, force_new=False):
 
-
-
-
-        self.uuid = str(uuid.uuid4()).split("-")[-1]
-        self.parent_uuid = parent
-
-
-        self.params = {}
-        self.widgets = {}
-
-              
-        if outFolder is None:
-            outFolder = "Outputs_"+name
+       
+        self.config = config       
+        self.name = name
 
         
+        self.widgets = {}
+              
+        if outFolder is None:
+            outFolder = "Outputs_"+name+'/'
+       
         createDir(outFolder)
+      
+        logFile = outFolder+self.name+"_model_log.csv"
 
-        objRoot = outFolder+'/'+name+'_'+self.uuid
+        set_new_uuid = True
 
+        if not force_new:
+            try:
+                if exists(logFile):
+                    with open(logFile, 'r') as f:
+                        line = f.readline()
+
+                    if line.strip("#").strip()[:4] == "uuid":
+                        old_uuid = line.strip("#").split(":")[1].strip()                   
+                        if os.path.isdir(outFolder+self.name+"_"+old_uuid):
+                            
+                            self.uuid = old_uuid
+                            self.params = get_obj_params(open_log_df(logFile))
+                            set_new_uuid = False
+            except:
+                pass
+
+        if set_new_uuid:
+            self.uuid = str(uuid.uuid4()).split("-")[-1]
+            self.params = {}
+        
+        objRoot = outFolder+name+'_'+self.uuid
         createDir(objRoot)
 
         self.objRoot = objRoot+'/'
-        
 
         if inFolder is not None:
             self.inFolder = inFolder+'/'
 
-        self.config = config
-        
-        self.name = name
+
 
         if automatic:
             try:
@@ -1252,7 +1344,7 @@ class SBFobject:
         r1         = self.outerR(c_kron)      
         k          = self.params[main_key]["k_ellipse"] = self.widgets[main_key+"_k"].value
         nr         = int(np.round((r1-r0)/k))
-        sky_factor = self.params[main_key][""] = self.widgets[main_key+"_skyfactor"].value
+        sky_factor = self.params[main_key]["sky_factor"] = self.widgets[main_key+"_skyfactor"].value
 
         sky     = int(sky_factor*self.sky_med)
         options = self.params[main_key]["option"] = self.widgets[main_key+"_option"].value
@@ -1295,7 +1387,7 @@ class SBFobject:
         return (ax1, ax2)
 
     #########################################################
-    def slider_back_sex(self):
+    def slider_back_threshold(self):
 
         main_key = "backSextract"
 
@@ -1309,7 +1401,7 @@ class SBFobject:
         return s
 
     #########################################################
-    def plot_backsex(self, pngName=None):
+    def plot_back_mask(self, pngName=None):
 
         thresh = self.params["backSextract"]["threshold"] = self.widgets["backSextract_thresh"].value
 
@@ -1350,7 +1442,7 @@ class SBFobject:
             else:
                 return None
         except:
-            return None
+             return None
 
         self.widgets[widget_name] = my_widget
 
@@ -1508,7 +1600,7 @@ class SBFobject:
                                 params={"default" : self.params[basic_key]["sky_factor"],
                                     "min" : 0.1, 
                                     "max" : 1.2,
-                                    "step": 0.05,
+                                    "step": 0.01,
                                     "description" : "Sky_factor"})
 
         s1 += self.add_widget(main_key, "k_ellipse", main_key+"_k", 
@@ -1572,7 +1664,7 @@ class SBFobject:
         r1         = self.outerR(c_kron)      
         k          = self.params[main_key]["k_ellipse"] = self.widgets[main_key+"_k"].value
         nr         = int(np.round((r1-r0)/k))
-        sky_factor = self.params[main_key][""] = self.widgets[main_key+"_skyfactor"].value
+        sky_factor = self.params[main_key]["sky_factor"] = self.widgets[main_key+"_skyfactor"].value
 
         sky     = int(sky_factor*self.sky_med)
         options = self.params[main_key]["option"] = self.widgets[main_key+"_option"].value
@@ -1822,6 +1914,236 @@ class SBFobject:
 
 
 #########################################################
+    def plot_back_histogram(self, sky_factor):
+
+        resid_name = self.objRoot+"resid.000"
+        back_mask = self.objRoot+"back_mask.fits"
+
+        imarray, header = imOpen(resid_name)
+        mskarray, header = imOpen(back_mask)
+
+        masked_image = imarray*mskarray
+
+        fits.writeto(self.objRoot+'tmp.fits', np.float32(masked_image), overwrite=True)
+
+        ## plot_2darray(imarray)
+        # tv('./tmp.fits', options='log')
+
+
+        a = masked_image
+        a = a[(a!=0)]
+        std = np.std(a)
+        mean = np.mean(a)
+
+        a = a[((a>mean-3.*std)&(a<mean+3.*std))]
+
+        median = np.median(a)
+        mean = np.mean(a)
+        std = np.std(a)
+
+        print("Back Median: %.2f"%median)
+        print("Back Mean: %.2f"%mean)
+        print("Back Stdev: %.2f"%std)
+
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,4))
+
+        ax1.hist(a, bins=np.linspace(mean-5*std, mean+5*std, 10), density=True, color='g', alpha=0.7)
+        tv(self.objRoot+'tmp.fits', ax=ax2, options="")
+
+        ax1.axvline(x=0, color='r', linestyle=':')
+        ax1.set_title("input sky factor: %.3f"%sky_factor)
+        ax2.set_title("background pixels")
+
+
+        new_factor = median/self.sky_med + sky_factor
+
+
+        pngName = self.objRoot+self.name+'_updated_back.png'
+        plt.savefig(pngName)
+        print("fig. name: ", pngName)
+
+        print("New potential sky factor:", "%.3f"%new_factor)
+
+
+        self.params["background"] = {}
+        self.params["background"]["median"] = median
+        self.params["background"]["mean"] = mean
+        self.params["background"]["std"] = std
+        self.params["background"]["new_sky_factor"] = new_factor
+
+
+
+        return (ax1, ax2)
+
+    #########################################################
+
+    def save_log(self, sky_factor):
+
+        objDict = {}
+
+        objDict["index"] = 'value'
+        objDict["uuid"] = self.uuid
+        objDict["User"] = os.getlogin().capitalize()
+        objDict["Time"] = datetime.now()
+        objDict["Name"] = self.name
+        objDict["X_pixels"] = self.x_max
+        objDict["Y_pixels"] = self.y_max
+        objDict["R_max"] = self.r_max
+        objDict["X0"] = self.x0
+        objDict["Y0"] = self.y0
+        objDict["a"] = "%.3f"%self.a
+        objDict["b"] = "%.3f"%self.b
+        objDict["sky_med"] = "%.3f"%self.params["background"]["median"]
+        objDict["sky_avg"] = "%.3f"%self.params["background"]["mean"]
+        objDict["sky_std"] = "%.3f"%self.params["background"]["std"]
+        objDict["r0"] = r0 = self.params["second_elliprof"]["r0"] 
+        objDict["c_kron"] = c_kron = self.params["second_elliprof"]["c_kron"]
+        objDict["r1"] = r1 = self.outerR(c_kron)  
+        objDict["k"] = k = self.params["second_elliprof"]["k_ellipse"]
+        objDict["nr"] = int(np.round((r1-r0)/k))      
+        objDict["options"] = self.params["second_elliprof"]["option"]
+        objDict["sky_factor"] = "%.3f"%sky_factor
+        objDict["sky"] = int(sky_factor*self.sky_med)
+        objDict["initial_sky_med"] = "%.3f"%self.sky_med
+        objDict["initial_sky_avg"] = "%.3f"%self.sky_ave
+        objDict["initial_sky_std"] = "%.3f"%self.sky_std
+
+        objDict["obj_root"] = self.objRoot
+
+        objDict["resid_name"]  = self.objRoot+"resid.000"
+        objDict["model_name"]  = self.objRoot+"model.000"
+        objDict["back_mask"]   = self.objRoot+"back_mask.fits"
+        objDict["ellipseFile"] = self.objRoot+'elliprof.000'
+
+        main_key = "backSextract"
+        objDict["BXT"] = self.params[main_key]["threshold"]
+
+        main_key = "naiveSextract"
+        objDict["NXM"] = self.params[main_key]["minarea"]
+        objDict["NXT"] = self.params[main_key]["threshold"]
+        objDict["NXS"] = self.params[main_key]["smooth"]
+
+        main_key = "basic_elliprof"
+        objDict["BER"] = self.params[main_key]["r0"]
+        objDict["BEC"] = self.params[main_key]["c_kron"]
+        objDict["BES"] = self.params[main_key]["sky_factor"]
+        objDict["BEK"] = self.params[main_key]["k_ellipse"]
+        objDict["BEO"] = self.params[main_key]["option"]
+
+        main_key = "second_elliprof"
+        objDict["SER"] = self.params[main_key]["r0"]
+        objDict["SEC"] = self.params[main_key]["c_kron"]
+        objDict["SEF"] = self.params[main_key]["sky_factor"]
+        objDict["SEK"] = self.params[main_key]["k_ellipse"]
+        objDict["SEO"] = self.params[main_key]["option"]
+        objDict["SEM"] = self.params[main_key]["minarea"]
+        objDict["SET"] = self.params[main_key]["threshold"]
+        objDict["SES"] = self.params[main_key]["smooth"]
+        objDict["SEN"] = self.params[main_key]["renuc"]
+
+
+
+
+        ########
+
+        df = pd.DataFrame.from_dict(objDict, orient='index', columns=['value'])
+        
+        key = 'description'
+        df[key] = ''
+
+
+        ########
+        df.at["index", key] =  'description'
+        df.at["uuid", key] =  'Unique Identifier Code'
+        df.at["Name", key] =  'Object Name'
+        df.at["User", key] =  'User Name'
+        df.at["Time", key] =  'Modification Time'
+        df.at["X_pixels", key] =  'X-dimension of image [pixel]'
+        df.at["Y_pixels", key] =  'Y-dimension of image [pixel]'
+        df.at["R_max", key] =  'maximum horizontal/vertical distance from center to the image border [pixel]'
+        df.at["X0", key] =  'Object Center X0 [pixel]'
+        df.at["Y0", key] =  'Object Center Y0 [pixel]'
+        df.at["a", key] =  'semi-major axis [pixel]'
+        df.at["b", key] =  'semi-minor axis [pixel]'
+        df.at["sky_med", key] =  'median sky background after model subtraction'
+        df.at["sky_avg", key] =  'mean sky background after model subtraction'
+        df.at["sky_std", key] =  '1-sigma standard deviation of the sky background after model subtraction'
+        df.at["r0", key] =  'elliprof: inner fit radius'
+        df.at["r1", key] =  'elliprof: outer fit radius'
+        df.at["nr", key] =  'elliprof: number of fitted radii '
+        df.at["k", key] =  'nr=[r1/k]'
+        df.at["c_kron", key] =  'Kron radius factor'
+        df.at["options", key] =  'elliprof: options'
+        df.at["sky_factor", key] =  'sky factor'
+        df.at["sky", key] =  'sky level = sky_factor*initial_sky_median'
+        df.at["initial_sky_med", key] =  'initial sky median'
+        df.at["initial_sky_avg", key] =  'initial sky mean'
+        df.at["initial_sky_std", key] =  'initial sky standard deviation'
+
+        df.at["obj_root", key] =  'name of the outputs folder'
+
+        df.at["resid_name", key] =  'residual image [fits]'
+        df.at["model_name", key] =   'model image [fits]'
+        df.at["back_mask", key] =   'background mask [fits]'
+        df.at["ellipseFile", key] =   'ellipse file [text]'
+
+        df.at["BXT", key] =   'backSextract::threshold'
+
+        df.at["NXM", key] =   'naiveSextract::minarea'
+        df.at["NXT", key] =   'naiveSextract::threshold'
+        df.at["NXS", key] =   'naiveSextract::smooth'
+
+        df.at["BER", key] =   'basic_elliprof::r0'
+        df.at["BEC", key] =   'basic_elliprof::c_kron'
+        df.at["BES", key] =   'basic_elliprof::sky_factor'
+        df.at["BEK", key] =   'basic_elliprof::k_ellipse'
+        df.at["BEO", key] =   'basic_elliprof::option'
+
+        df.at["SER", key] =   'second_elliprof::r0'
+        df.at["SEC", key] =   'second_elliprof::c_kron'
+        df.at["SEF", key] =   'second_elliprof::sky_factor'
+        df.at["SEK", key] =   'second_elliprof::k_ellipse'
+        df.at["SEO", key] =   'second_elliprof::option'
+        df.at["SEM", key] =   'second_elliprof::minarea'
+        df.at["SET", key] =   'second_elliprof::threshold'
+        df.at["SES", key] =   'second_elliprof::smooth'
+        df.at["SEN", key] =   'second_elliprof::renuc'
+
+
+
+
+        ########
+
+        df = df.reset_index()
+        logFile = self.objRoot+'../'+self.name+"_model_log.csv"
+
+        
+
+        if not exists(logFile):
+            xcmd("echo '###### uuid:'"+self.uuid+"  > "+logFile+".temp", verbose=False)  # header
+            np.savetxt(logFile, df.values, fmt='%20s , %60s , %80s')
+
+            xcmd("cat "+logFile+" >> "+logFile+".temp", verbose=False)
+            xcmd("mv "+logFile+".temp "+logFile, verbose=False)
+        else:   
+            xcmd("echo '###### uuid: '"+self.uuid+"  > "+logFile+".temp~", verbose=False)  # header
+            
+            np.savetxt(logFile+".temp", df.values, fmt='%20s , %60s , %80s')
+
+            xcmd("echo   >> "+logFile+".temp", verbose=False)
+            
+            xcmd("cat "+logFile+".temp"+" >> "+logFile+".temp~", verbose=False)
+            xcmd("cat "+logFile+" >> "+logFile+".temp~", verbose=False)
+            
+            xcmd("mv "+logFile+".temp~ "+logFile, verbose=False)
+            xcmd("rm "+logFile+".temp", verbose=False)
+            
+        print("Log File: ", logFile)
+
+        return df
+
+
 
 #########################################################
 
