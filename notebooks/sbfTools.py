@@ -1963,7 +1963,8 @@ class SBFobject:
         plt.savefig(pngName)
         print("fig. name: ", pngName)
 
-        print("New potential sky factor:", "%.3f"%new_factor)
+        print("\nNew potential sky factor:", "%.3f"%new_factor)
+        print("Note that the suggested sky factor is determined based on the histogram of \nthe background pixels in the residual image !!!")
 
 
         self.params["background"] = {}
