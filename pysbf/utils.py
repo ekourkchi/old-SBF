@@ -30,6 +30,312 @@ import copy
 
 
 ##############################################################
+class MissingGalaxyCenter(Exception):
+    pass
+
+
+##############################################################
+def get_sex_catal_ColName(catalName):
+
+        with open(catalName, 'r') as f:
+
+            lines = f.readlines()
+
+        cols = {}
+        i = 0 
+        while lines[i].split()[0]=="#":
+            j = int(lines[i].split()[1])
+            name = lines[i].split()[2]
+            
+            n = 1
+            cols[i] = [j, name, n]
+            
+            if i>0:
+                n = cols[i][0]-cols[i-1][0]
+                cols[i-1][2] = n
+          
+            i+=1
+        
+        col_names = []
+        n_head = i
+        for m in range(i):
+            s = cols[m][2]
+            name = cols[m][1]
+            if s==1:
+                col_names.append(name)
+            else:
+                for p in range(s):
+                    col_names.append(name+'_'+str(p+1))
+                            
+        return n_head, col_names
+
+##############################################################
+def get_sextract_catal_df(catalName):
+
+    n_head, col_names = get_sex_catal_ColName(catalName)
+    catal_df = pd.read_csv(catalName, delimiter=r"\s+", skiprows=n_head, 
+                            header = None, names = col_names)
+
+    return catal_df
+
+
+##############################################################
+def tv(fits_name, xlim=[0,1], ylim=[0,1], ax=None, options="", zoom=1., **kwarg):
+
+    size = 1./zoom
+
+    img = get_img(fits_name, options=options)
+    
+    x_max, y_max, _ = img.shape
+
+    xlim = [int(x_max*l) for l in xlim]
+    ylim = [int(y_max*l) for l in ylim]
+
+    if "XY" in kwarg:
+
+        try:
+            XY = kwarg["XY"]
+            X0 = int(XY[0])
+            Y0 = int(XY[1])
+
+            x0 = np.max([X0 - int(size * x_max) , 0])
+            x1 = np.min([X0 + int(size * x_max) , x_max])
+            y0 = np.max([Y0 - int(size * y_max) , 0])
+            y1 = np.min([Y0 + int(size * y_max) , y_max])
+
+            xlim = [x0, x1]
+            ylim = [y0, y1]
+        except:
+            print("Enter the galaxy center !")
+            pass        
+        
+    if ax is None:
+        plt.figure(figsize=(10, 10))
+        plt.subplot(111)
+        ax = plt.gca()
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+
+    imgplot = ax.imshow(np.flipud(img))
+    
+    return ax
+##############################################################
+
+def get_img(fits_file, ax=None, options=""):
+
+    jpg_name = 'tv.jpg'
+
+    ## Monsta script
+    script = """
+    rd 1 '"""+fits_file+"""'
+    tv 1 """+options+""" JPEG="""+jpg_name+"""
+    q
+
+    """
+
+    run_monsta(script, 'tv.pro', 'tv.log')
+    
+    xcmd("rm tv.pro & rm tv.log &", verbose=False)
+    
+    
+    img = mpimg.imread(jpg_name)
+    
+    return img
+##############################################################
+
+def run_monsta(script, Monsta_pro, Monsta_log, monsta="monsta", silent=False):
+
+    with open(Monsta_pro, "w") as f:
+        f.write(script)
+
+    cmd = monsta + " " + Monsta_pro
+    xcmd(cmd + " > " + Monsta_log, verbose=False)
+
+    with open(Monsta_log) as f:
+        text = f.read()
+
+    with open(Monsta_log) as f:
+        text = f.read()
+    Tsplit = text.upper().split()
+    if "ERROR" in Tsplit or "SEGMENTATION FAULT" in Tsplit:
+        if not silent:
+            print("===== MONSTA =====")
+            for i, line in enumerate(script.split("\n")):
+                print(f"{i+1:>4}{line}")
+            print("===================")
+            print(text)
+            return text
+        else:
+            return "[Warning] MONSTA NOT OK !"
+    else:
+        return "OK"
+
+##############################################################
+
+def SExtract(model=0, smooth=None, minArea=10, thresh=2, mask=None, \
+                    good_segments=[0], r_aperture = 100, \
+                    renuc=1, **Config
+):
+
+
+    root = Config["objRoot"]
+    name = Config["name"]
+    inFolder = Config["inFolder"]
+    configFolder = Config["configFolder"]
+    X0 = Config["X0"]
+    Y0 = Config["Y0"]
+
+    suffix = ".%03d" % model
+
+    if mask is None:
+        suffix_mask = ".%03d" % model
+    else:
+        suffix_mask = ".%03d" % mask
+
+    residName = root + "/resid" + suffix
+    modelName = root + "/model" + suffix
+    segment = root + "/objCheck" + suffix + ".segment"
+    objName = root + "/objCheck" + suffix
+    objCatal = root + "/objCatal" + suffix
+    maskName = root + "/mask" + suffix_mask
+    sex_obj_maskName = root + "/mask_sej" + suffix
+    model_mask = root + "/mask" + ".%03d" % model
+    tmp = root + "/smooth"
+
+    objFits = inFolder + "{}/{}j.fits".format(name, name)
+    script = (
+        """
+    rd 1 '"""
+        + residName
+        + """'
+    rd 2 """
+        + maskName
+        + """
+    si 1 2
+    wd 1 '"""
+        + sex_obj_maskName
+        + """'
+    q
+    """
+    )
+    run_monsta(script, root + "obj.pro", root + "obj.log")
+
+    if smooth is not None:
+        script = (
+            """
+        rd 1 """
+            + sex_obj_maskName
+            + """
+        smooth 1 fw="""
+            + str(smooth)
+            + """
+        wd 1 """
+            + tmp
+            + """
+        q
+        
+        """
+        )
+        
+        run_monsta(script, root + "obj.pro", root + "obj.log")
+        sex_obj_maskName = tmp
+
+    sex_configFolder = configFolder + "sextractor/wfc3j.inpar"
+    PARAMETERS_NAME = configFolder + "sextractor/sbf.param"
+    FILTER_NAME = configFolder + "sextractor/gauss_2.0_5x5.conv"
+    STARNNW_NAME = configFolder + "sextractor/default.nnw"
+
+    sex_cmd = (
+        """sex """
+        + sex_obj_maskName
+        + """ -c w"""
+        + sex_configFolder
+        + """ -CHECKIMAGE_NAME """
+        + segment
+    )
+    sex_cmd += " -CATALOG_NAME  " + objCatal
+    sex_cmd += " -DETECT_MINAREA " + str(minArea)
+    sex_cmd += " -DETECT_THRESH " + str(thresh)
+    sex_cmd += " -ANALYSIS_THRESH " + str(thresh)
+    sex_cmd += " -CHECKIMAGE_TYPE SEGMENTATION "
+    sex_cmd += (
+        " -PARAMETERS_NAME "
+        + PARAMETERS_NAME
+        + " -FILTER_NAME "
+        + FILTER_NAME
+        + " -STARNNW_NAME "
+        + STARNNW_NAME
+    )
+
+    variance = modelName
+
+    if renuc is not None and renuc != 1:
+        variance = root + "/model" + suffix + "_renuc_" + str(renuc)
+        script = (
+            """
+        rd 1 """
+            + modelName
+            + """
+        mc 1 """
+            + str(renuc)
+            + """
+        wd 1 """
+            + variance
+            + """
+        q
+        
+        """
+        )
+
+        run_monsta(script, root + "obj.pro", root + "obj.log")
+        sex_cmd += " -WEIGHT_IMAGE  " + variance
+        sex_cmd += " -WEIGHT_TYPE  MAP_VAR"
+
+    xcmd(sex_cmd + " > " + root + "sextractor.log", verbose=False)
+
+
+    df = get_sextract_catal_df(objCatal)
+    df["rc"] = np.sqrt((df.X_IMAGE - X0)**2+(df.Y_IMAGE - Y0)**2)
+
+    df_ignore = df[df.rc<=r_aperture]
+    good_segments = df_ignore["NUMBER"].values
+    df = df[df.rc>r_aperture]
+
+    imarray = seg2mask(segment, objName, good_segments=good_segments, object_mask=True)
+
+    ## Monsta script
+    sex_obj_masked = root + "/masked_sej" + suffix
+    script = (
+        """
+    rd 1 """
+        + residName
+        + """
+    rd 2 """
+        + objName
+        + """
+    rd 5 './common.mask'
+    mi 1 2
+    mi 1 5
+    wd 1 """
+        + sex_obj_masked
+        + """ 
+    tv 1 JPEG="""
+        + sex_obj_masked
+        + """.jpg
+    q
+    
+    """
+    )
+    # print(root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
+
+    run_monsta(
+        script, root + "obj" + suffix + ".pro", root + "obj" + suffix + ".log"
+    )
+
+    print(root + "obj" + suffix + ".pro")
+    return objCatal, df, objName, sex_obj_maskName, sex_obj_masked, residName
+##############################################################
 
 
 def get_extinction(ra, dec):
@@ -444,80 +750,7 @@ def plot_E(df, ax=None, **kwargs):
 
 ##############################################################
 
-
-def tv(fits_file, ax=None, options=""):
-
-    jpg_name = "tv.jpg"
-
-    ## Monsta script
-    script = (
-        """
-    rd 1 '"""
-        + fits_file
-        + """'
-    tv 1 """
-        + options
-        + """ JPEG="""
-        + jpg_name
-        + """
-    q
-
-    """
-    )
-
-    run_monsta(script, "tv.pro", "tv.log")
-
-    xcmd("rm tv.pro & rm tv.log &", verbose=False)
-
-    img = mpimg.imread(jpg_name)
-    x_max, y_max, _ = img.shape
-
-    if ax is None:
-        plt.figure(figsize=(10, 10))
-        plt.subplot(111)
-        ax = plt.gca()
-
-    ax.set_xlim([0, x_max])
-    ax.set_ylim([0, y_max])
-
-    imgplot = ax.imshow(np.flipud(img))
-
-    return ax
-
-
 ##############################################################
-
-
-def run_monsta(script, Monsta_pro, Monsta_log, monsta="monsta", silent=False):
-
-    with open(Monsta_pro, "w") as f:
-        f.write(script)
-
-    cmd = monsta + " " + Monsta_pro
-    xcmd(cmd + " > " + Monsta_log, verbose=False)
-
-    with open(Monsta_log) as f:
-        text = f.read()
-
-    with open(Monsta_log) as f:
-        text = f.read()
-    Tsplit = text.upper().split()
-    if "ERROR" in Tsplit or "SEGMENTATION FAULT" in Tsplit:
-        if not silent:
-            print("===== MONSTA =====")
-            for i, line in enumerate(script.split("\n")):
-                print(f"{i+1:>4}{line}")
-            print("===================")
-            print(text)
-            return text
-        else:
-            return "[Warning] MONSTA NOT OK !"
-    else:
-        return "OK"
-
-
-##############################################################
-
 
 def imOpen(inFits):
 
@@ -531,12 +764,17 @@ def imOpen(inFits):
 ##############################################################
 
 
-def seg2mask(inFits, outMask, overwrite=True, seg_num=0):
+def seg2mask(inFits, outMask, overwrite=True, seg_num=0, good_segments=[0], object_mask=False):
 
     imarray, header = imOpen(inFits)
-    imarray[((imarray == 0))] = -1  # good pixel
+
+    for good_pix in good_segments:
+        imarray[((imarray == good_pix))] = -1  # good pixel
     if seg_num != 0:
         imarray[((imarray == seg_num))] = -1  # good pixel
+
+    if object_mask:
+        imarray[((imarray == 0))] = -1  # backgrounds --> good pixel
     imarray[(imarray != -1)] = 0  # masked
     imarray[imarray == -1] = 1  # good pixel
 
