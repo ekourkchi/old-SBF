@@ -91,15 +91,18 @@ def unnamed(catal_df, **Config):
                 # add check to make sure it's a reasonable & useful object:
                 # changed merr>50 to merr>0.3 to produce a cleaner sample.
                 # Ignore objects within 10 pix of the galaxy center.
-                if merr>0.3 or radius[i]<10:
-                    continue
+                
+                # if merr>0.3 or radius[i]<10:
+                #     continue
+
                 # Add a check to remove the bad objects with FWHM=0 that SE sometimes finds 
                 # These single pixel object might be bad pixels or cosmic rays
                 # in masked areas of WFC3/IR data;
                 # reduced fwhm limit to 20 pix to avoid huge residual "galaxies" (maybe only needed for Coma)
-                if fwhm[i]<0.01 or fwhm[i]>10:
-        #                gal = gal - 1
-                    continue
+                
+        #         if fwhm[i]<0.01 or fwhm[i]>10:
+        # #                gal = gal - 1
+        #             continue
             
                 if isStar:
                     f.write("circle(%.4f, %.4f, 3) # color=red \n"%(xpos[i]+0.5,ypos[i]+0.5))

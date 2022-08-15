@@ -252,12 +252,13 @@ def SExtract(model=0, smooth=None, minArea=10, thresh=2, mask=None, \
         + """ -c w"""
         + sex_configFolder
         + """ -CHECKIMAGE_NAME """
-        + segment
+        + segment   ### "./back.fits"
     )
     sex_cmd += " -CATALOG_NAME  " + objCatal
     sex_cmd += " -DETECT_MINAREA " + str(minArea)
     sex_cmd += " -DETECT_THRESH " + str(thresh)
     sex_cmd += " -ANALYSIS_THRESH " + str(thresh)
+    sex_cmd += " -BACK_SIZE 4"
     sex_cmd += " -CHECKIMAGE_TYPE SEGMENTATION "
     sex_cmd += (
         " -PARAMETERS_NAME "
