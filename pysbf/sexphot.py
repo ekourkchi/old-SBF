@@ -4,7 +4,7 @@ from .utils import *
 
 
 ##############################################################
-def SExtract(model=0, smooth=None, minArea=10, thresh=2, mask=None, \
+def SExtract(model=0, smooth=None, minArea=10, mask=None, thresh=2, \
                     good_segments=[0], r_aperture = 100, \
                     renuc=1, **Config
 ):
@@ -35,15 +35,23 @@ def SExtract(model=0, smooth=None, minArea=10, thresh=2, mask=None, \
     tmp = root + "/smooth"
 
     objFits = inFolder + "{}/{}j.fits".format(name, name)
+    Dmask = inFolder + "{}/{}j.dmask".format(name, name)
+
+    maskName = Dmask
+
     script = (
         """
     rd 1 '"""
-        + residName    # prf file
+        + objFits    # original fits image
         + """'
-    rd 2 """
+    rd 2 '"""
+        + modelName     # prf file
+        + """'
+    rd 3 """
         + maskName
         + """
     si 1 2
+    mi 1 3
     wd 1 '"""
         + sex_obj_maskName
         + """'
@@ -174,6 +182,9 @@ def SExtract(model=0, smooth=None, minArea=10, thresh=2, mask=None, \
     )
 
     print(root + "obj" + suffix + ".pro")
+
+    sex_obj_maskName = root + "/mask_sej" + suffix
+
     return objCatal, df, objName, sex_obj_maskName, sex_obj_masked, residName
 
 
@@ -303,7 +314,7 @@ def make_se_lkn(catal_df, model=None, star_f=0.7, r_aperture=0, filter='j', **Co
                 else:
                     ds9_file.write("ellipse(%.4f, %.4f, %.4f, %.4f, %.4f) # color=green \n"%(xpos[i]+0.5,ypos[i]+0.5,kron[i]*AA[i], kron[i]*BB[i], pa[i]))
             else:
-                ds9_file.write("ellipse(%.4f, %.4f, %.4f, %.4f, %.4f) # color=red \n"%(xpos[i]+0.5,ypos[i]+0.5,kron[i]*AA[i], kron[i]*BB[i], pa[i]))
+                ds9_file.write("ellipse(%.4f, %.4f, %.4f, %.4f, %.4f) # color=yellow \n"%(xpos[i]+0.5,ypos[i]+0.5,kron[i]*AA[i], kron[i]*BB[i], pa[i]))
                 continue
                     
             # just the extended objects
