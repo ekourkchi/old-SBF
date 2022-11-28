@@ -1,7 +1,9 @@
-# Hot to install likenew6
+## Hot to install likenew6
 
 1- open a terminal
+
 2- go to the <path>/pysbf/sbfsrc folder
+
 3- Run:
 
 `make all; mv likenew6.so ../lib/.`
