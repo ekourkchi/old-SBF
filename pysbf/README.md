@@ -2,7 +2,7 @@
 
 1- open a terminal
 
-2- go to the <path>/pysbf/sbfsrc folder
+2- go to the `<path>/pysbf/sbfsrc` folder
 
 3- Run:
 
