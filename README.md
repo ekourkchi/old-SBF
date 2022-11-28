@@ -1,4 +1,4 @@
-# Surfance Brighness Fluctuations
+# Surfance Brightness Fluctuations
 
 -**notebooks**: holds all high level notebooks to extract the SBF signals
 
