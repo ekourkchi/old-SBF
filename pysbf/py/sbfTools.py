@@ -28,7 +28,7 @@ import pylab, os, sys
 
 import copy
 
-from pysbf.utils import *
+from .utils import *
 ##############################################################
 class SBFobject:
 
