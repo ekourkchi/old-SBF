@@ -136,7 +136,7 @@ class SBFobject:
         root = self.objRoot
 
         if mask is None:
-            mask_name = "./common.mask"
+            mask_name = self.config + "/common.mask"
         else:
             suffix = ".%03d" % mask
             mask_name = root + "/mask" + suffix
@@ -242,7 +242,7 @@ class SBFobject:
             outMask = root + "/mask" + ".%03d" % mask
 
         script = """
-        rd 1 ./common.mask
+        rd 1 """ + self.config + """/common.mask
         """
 
         if maskName is not None:
@@ -279,7 +279,7 @@ class SBFobject:
             outMask = root + "/mask" + ".%03d" % mask
 
         script = """
-        rd 1 ./common.mask
+        rd 1 """ + self.config + """/common.mask
         """
 
         if maskList is not None:
@@ -321,7 +321,7 @@ class SBFobject:
 
         if maskFile is None:
             if mask is None:
-                inMask = "./common.mask"
+                inMask = self.config + "/common.mask"
             else:
                 suffix = ".%03d" % mask
                 inMask = root + "/mask" + suffix
@@ -376,7 +376,7 @@ class SBFobject:
             sky = self.sky_med
 
         if mask is None:
-            maskName = "./common.mask"
+            maskName = self.config + "/common.mask"
             monsta_masking = """
         cop 3 1 
         """
@@ -632,7 +632,7 @@ class SBFobject:
         rd 1 """
             + objName
             + """
-        rd 5 './common.mask'
+        rd 5 """ + self.config + """/common.mask
         mi 1 5
         wd 1 """
             + maskName
@@ -688,7 +688,7 @@ class SBFobject:
         rd 1 """
             + fits_name
             + """
-        rd 2 ./common.mask
+        rd 2 """ + self.config + """/common.mask
         mi 1 2
         wd 1 """
             + odj_common
@@ -753,12 +753,14 @@ class SBFobject:
         FILTER_NAME = config + "sextractor/gauss_2.0_5x5.conv"
         STARNNW_NAME = config + "sextractor/default.nnw"
 
+        backSexCatal = root + "/background_wfc3j.cat" 
+
         script = (
             """
         rd 1 """
             + fits_name
             + """
-        rd 2 ./common.mask
+        rd 2 """ + self.config + """/common.mask
         mi 1 2
         wd 1 """
             + odj_common
@@ -770,6 +772,7 @@ class SBFobject:
         self.run_monsta(script, root + "obj.pro", root + "obj.log")
 
         cmd = "sex -c " + sex_config + " " + odj_common
+        cmd += " -CATALOG_NAME  " + backSexCatal
         cmd += (
             " -BACK_SIZE 500 -DETECT_MINAREA 4 -DETECT_THRESH "
             + str(thresh)
@@ -1531,7 +1534,7 @@ class SBFobject:
                     rd 1 """
                     + objName
                     + """
-                    rd 5 './common.mask'
+                    rd 5 """ + self.config + """/common.mask
                     mi 1 5
                     wd 1 """
                     + maskName
