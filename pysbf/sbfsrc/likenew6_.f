@@ -43,6 +43,7 @@
       subroutine likenew(fname,n_fname,icolor,secperpixel_,fwhm,
      $                 distance, kscale, delta_, snlim, 
      $                 mlim_, mname, n_mname, yessoft, abmags, 
+     $                 out_root, n_out_root,
      $                 beta_, cnorm_, cmax_, alpha_, tot_gc,
      $                 gamma_, gnorm, tnorm, tot_gal, galpersec_,
      $                 tysonempersec_, status) 
@@ -52,8 +53,8 @@ C      parameter (maxpt=10000, maxvar=3, maxdim=2048, pi=3.14159265)
       parameter (nannuli=5, npred=100)
       parameter (maxhead=1000)
       parameter (maxcolor=9)
-      character*1000 fname, mname, outname
-      integer n_fname, icolor, status, n_mname
+      character*1000 fname, mname, outname, out_root
+      integer n_fname, icolor, status, n_mname, n_out_root
       character colname(0:maxcolor-1)
       real brightcut(0:maxcolor-1), brightcutvega(0:maxcolor-1)
       real r(maxpt), m(maxpt), dm(maxpt), rlim(2), mlim(4), mlim_
@@ -494,12 +495,11 @@ C NANNULI is the number of annuli in which results are computed
 C NMARG  is the number of bins for the marginal distributions
 C NPRED  is the number of points where predicted results are reported
 
-      ind = index(fname,'.') - 1
-      if(ind.lt.0) ind = lnb(fname)
+      ind = n_out_root
       if(relike) then
-         write(outname,'(a,a,a)') fname(:ind), colname(icolor), '.rlk'
+         write(outname,'(a,a,a)') out_root(:ind),colname(icolor),'.rlk'
       else
-         write(outname,'(a,a,a)') fname(:ind), colname(icolor), '.lkn6'
+         write(outname,'(a,a,a)') out_root(:ind),colname(icolor),'.lkn6'
       end if
       open(unit=2,file=outname,status='unknown')
 
@@ -798,7 +798,8 @@ C         emcut = surf - 2.5*alog10(0.4*exp(-r/s))
  50   continue
 
 C Convert the array to a bitmap and write it to Nxxxx_?.ptm
-      write(outname,'(a,a,a)') fname(:ind), colname(icolor), '.ptm6'
+      ind = n_out_root
+      write(outname,'(a,a,a)') out_root(:ind),colname(icolor), '.ptm6'
       call shortbit(nx*ny, bitmap, bitmap)
       ibitpix = 1
       call wfits(outname,nhead,header,ibitpix,nx,ny,bitmap)

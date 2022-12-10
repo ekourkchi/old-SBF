@@ -5,10 +5,10 @@ import os, sys
 
 
 class LikeNew:
-    def __init__(self, root):
+    def __init__(self, in_folder="", out_folder=""):
 
         mylib = cdll.LoadLibrary(
-            os.path.join(os.path.dirname(__file__), "lib/likenew6.so")
+            os.path.join(os.path.dirname(__file__), "../lib/likenew6.so")
         )
         self.likenew_ = mylib.likenew_
 
@@ -27,6 +27,8 @@ class LikeNew:
             pt(c_int),
             pt(c_bool),
             pt(c_bool),
+            c_char_p,
+            pt(c_int),
             pt(c_float),
             pt(c_float),
             pt(c_float),
@@ -41,7 +43,8 @@ class LikeNew:
             pt(c_int),
         ]
 
-        self.root = root
+        self.in_folder = in_folder + '/'
+        self.out_folder = out_folder + '/'
 
     def run(
         self,
@@ -59,15 +62,18 @@ class LikeNew:
         abmags=True,
         verbose=False,
     ):
-
-        fname = self.root + fname
-        mname = self.root + mname
+        
+        out_root = self.out_folder + fname.rsplit(".", 1)[0]
+        fname = self.in_folder + fname
+        mname = self.in_folder + mname
 
         fname = fname.encode("ascii")
         mname = mname.encode("ascii")
+        out_root = out_root.encode("ascii")
 
         n_fname = len(fname)
         n_mname = len(mname)
+        n_out_root = len(out_root)
 
         beta = c_float()
         cnorm = c_float()
@@ -97,6 +103,8 @@ class LikeNew:
             byref(c_int(n_mname)),
             byref(c_bool(yessoft)),
             byref(c_bool(abmags)),
+            out_root,
+            byref(c_int(n_out_root)),
             byref(beta),
             byref(cnorm),
             byref(cmax),
@@ -114,14 +122,14 @@ class LikeNew:
         out_dict = {}
 
         # output values from fortran subroutine
-        out_dict["beta"] = beta.value
-        out_dict["cnorm"] = cnorm.value
-        out_dict["cmax"] = cmax.value
-        out_dict["alpha"] = alpha.value
-        out_dict["tot_gc"] = tot_gc.value
-        out_dict["gamma"] = gamma.value
-        out_dict["gnorm"] = gnorm.value
-        out_dict["tnorm"] = tnorm.value
+        out_dict["beta"]    = beta.value
+        out_dict["cnorm"]   = cnorm.value
+        out_dict["cmax"]    = cmax.value
+        out_dict["alpha"]   = alpha.value
+        out_dict["tot_gc"]  = tot_gc.value
+        out_dict["gamma"]   = gamma.value
+        out_dict["gnorm"]   = gnorm.value
+        out_dict["tnorm"]   = tnorm.value
         out_dict["tot_gal"] = tot_gal.value
 
         out_dict["galpersec"] = galpersec.value
