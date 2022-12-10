@@ -172,7 +172,6 @@ class SBFobject:
         )
 
         self.run_monsta(script, root + "tv.pro", root + "tv.log")
-
         return self.plot_jpg(jpg_name, ax=ax)
 
     def SExtract(self):
@@ -206,8 +205,6 @@ class SBFobject:
             + " -STARNNW_NAME "
             + STARNNW_NAME
         )
-
-        # print(cmd)
 
         xcmd(cmd + " > " + root + "sextractor.log", verbose=False)
 
@@ -714,6 +711,7 @@ class SBFobject:
             + ' -CHECKIMAGE_TYPE "SEGMENTATION" -CHECKIMAGE_NAME '
         )
         cmd += maskName
+        cmd += " -CATALOG_NAME  " + root + "/naiive_sextract_wfc3j.cat" 
         cmd += (
             " -PARAMETERS_NAME "
             + PARAMETERS_NAME
@@ -753,8 +751,6 @@ class SBFobject:
         FILTER_NAME = config + "sextractor/gauss_2.0_5x5.conv"
         STARNNW_NAME = config + "sextractor/default.nnw"
 
-        backSexCatal = root + "/background_wfc3j.cat" 
-
         script = (
             """
         rd 1 """
@@ -772,7 +768,7 @@ class SBFobject:
         self.run_monsta(script, root + "obj.pro", root + "obj.log")
 
         cmd = "sex -c " + sex_config + " " + odj_common
-        cmd += " -CATALOG_NAME  " + backSexCatal
+        cmd += " -CATALOG_NAME  " + root + "/background_wfc3j.cat" 
         cmd += (
             " -BACK_SIZE 500 -DETECT_MINAREA 4 -DETECT_THRESH "
             + str(thresh)

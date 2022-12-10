@@ -138,8 +138,9 @@ def get_img(fits_file, ax=None, options=""):
     
     xcmd("rm tv.pro & rm tv.log &", verbose=False)
     
-    
     img = mpimg.imread(jpg_name)
+
+    xcmd("rm tv.jpg &", verbose=False)
     
     return img
 ##############################################################
@@ -677,12 +678,18 @@ def open_log_df(logName):
     with open(logName, "r") as f:
         lines = f.readlines()
 
-    if exists("./log.tmp"):
-        # print("backing up log.temp")
-        xcmd("cp ./log.tmp ./log.tmp.back", verbose=False)
-        xcmd("rm ./log.tmp", verbose=False)
+    r = logName.rsplit("/", 1)[0]
+    if r==logName:
+        R = "./"
+    else:
+        R = r + '/'
 
-    with open("./log.tmp", "w") as f:
+    if exists(R+"log.tmp"):
+        # print("backing up log.temp")
+        xcmd("cp "+R+"log.tmp "+R+"log.tmp.back", verbose=False)
+        xcmd("rm "+R+"log.tmp", verbose=False)
+
+    with open(R+"log.tmp", "w") as f:
 
         First = True
         for l in lines:
@@ -695,7 +702,7 @@ def open_log_df(logName):
             else:
                 f.write(l)
 
-    df = pd.read_csv("./log.tmp")
+    df = pd.read_csv(R+"log.tmp")
     for col in df.columns:
         df = df.rename(columns={col: col.strip()})
 
