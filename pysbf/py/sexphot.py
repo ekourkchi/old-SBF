@@ -162,7 +162,7 @@ def SExtract(model=0, smooth=None, minArea=10, mask=None, thresh=2, \
     rd 2 """
         + objName
         + """
-    rd 5 './common.mask'
+    rd 5 '""" + configFolder + """/common.mask'
     mi 1 2
     mi 1 5
     wd 1 """
