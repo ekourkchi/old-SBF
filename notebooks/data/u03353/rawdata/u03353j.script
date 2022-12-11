@@ -1,0 +1,51 @@
+! UCG 03353
+! A_B = 0.396
+! PS A_g =  A_z = 
+! A_F110W = 0.096 (SF2011)
+! v_cmb = 4212, d~? Mpc (NED)
+! texp = 502.936, 2011.746
+! approx sky = 2550
+! psf 1.4 pix = 0.18 arcsec
+! center 562.0 560.1
+!
+! scale and stack the raw files into a clean image:
+! in monsta
+rd 1 u03353j.001.fits
+rd 2 u03353j.002.fits
+rd 3 u03353j.003.fits
+rd 4 u03353j.004.fits
+! can't scale by exptime--autoclean clips to 16-bit integer*2 (which clips
+! the centers of the input images to 65535 and ruins the centers of brighter
+! objects.)
+! offset positions
+!  770.8  514.7
+!  778.9  517.5
+!  775.9  522.6
+!  767.9  519.7 
+shift 2 dx=-8  dy=-3
+shift 3 dx=-5  dy=-8
+shift 4 dx=3  dy=-5
+cop 7 1
+ai 7 2
+ai 7 3
+ai 7 4
+dc 7 4.
+tv 7 -10 100 
+wd 7 u03353j.forpsfs.fits
+! find the average peak value for the galaxy nucleus and/or any good
+! unsaturated PSF stars near the galaxy. 65500/1700=38.5,  
+mc 1 38.
+mc 2 38.
+mc 3 38.
+mc 4 38.
+wd 1 u03353j.001
+wd 2 u03353j.002
+wd 3 u03353j.003
+wd 4 u03353j.004
+
+! now use autoclean with default values, 1 e-/ADU, EXPTIME, 0.1, 0.99, (25,5,3)
+! when finished, in monsta,
+rd 1 u03353j.cln
+dc 1 38.
+mc 1 502.936
+wd 1 u03353j.fits

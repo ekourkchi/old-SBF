@@ -62,7 +62,9 @@ class SBFobject:
         self.widgets = {}
 
         if outFolder is None:
-            outFolder = "Outputs_" + name + "/"
+            outFolder = "./"
+        
+        outFolder += "Outputs_" + name + "/"
 
         createDir(outFolder)
 

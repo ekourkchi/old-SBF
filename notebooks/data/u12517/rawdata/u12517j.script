@@ -1,0 +1,75 @@
+! UCG 12517
+! A_B = 0.592
+! PS A_g =  A_z = 
+! A_F110W = 0.164 (SF2011)
+! v_cmb = 5251, d~? Mpc (NED)
+! texp = 502.936, 2011.746
+! approx sky = 3500
+! psf 1.4 pix = 0.18 arcsec
+! center 566.8  562.0
+!
+! scale and stack the raw files into a clean image:
+! in monsta
+rd 1 u12517j.001.fits
+rd 2 u12517j.002.fits
+rd 3 u12517j.003.fits
+rd 4 u12517j.004.fits
+! can't scale by exptime--autoclean clips to 16-bit integer*2 (which clips
+! the centers of the input images to 65535 and ruins the centers of brighter
+! objects.)
+! offset positions
+!  
+!  
+!  
+!  
+shift 2 dx=-8  dy=-3
+shift 3 dx=-5  dy=-8
+shift 4 dx=3  dy=-5
+cop 7 1
+ai 7 2
+ai 7 3
+ai 7 4
+dc 7 4.
+tv 7 -10 100 
+wd 7 u12517j.forpsfs.fits
+! find the average peak value for the galaxy nucleus and/or any good
+! unsaturated PSF stars near the galaxy. 65500/1100=59.5,  
+mc 1 58.
+mc 2 58.
+mc 3 58.
+mc 4 58.
+wd 1 u12517j.001
+wd 2 u12517j.002
+wd 3 u12517j.003
+wd 4 u12517j.004
+
+! now use autoclean with default values, 1 e-/ADU, EXPTIME, 0.1, 0.99, (25,5,3)
+autoclean u12517j.001 4 etime level=0.1,0.99 trigger=25,5,3 scour=25,5,3
+
+! when finished, in monsta,
+rd 1 u12517j.cln
+dc 1 58.
+mc 1 502.936
+wd 1 u12517j.fits
+
+!-------------
+! For psf stars
+! This works, but autoclean clips to 16 bit, not floats, and so the 
+! background level is artificially clipped. Don't use this
+rd 1 u12517j.001.fits
+rd 2 u12517j.002.fits
+rd 3 u12517j.003.fits
+rd 4 u12517j.004.fits
+shift 2 dx=-8  dy=-3
+shift 3 dx=-5  dy=-8
+shift 4 dx=3  dy=-5
+wd 1 u12517jp.001
+wd 2 u12517jp.002
+wd 3 u12517jp.003
+wd 4 u12517jp.004
+% autoclean u12517jp.001 4 etime level=0.1,0.99 trigger=25,5,3 scour=25,5,3
+rd 1 u12517jp.cln
+mc 1 502.936
+wd 1 u12517jp.fits
+
+

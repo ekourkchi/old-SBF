@@ -1,0 +1,140 @@
+=  UCG 12517 16262
+=  FREQUENTLY UPDATED PARAMETERS.  These parameters mostly depend on the 
+=  typical size of stellar objects on a given frame and on the mean sky value 
+=  for the image.  These parameters tend to be different for every frame.  
+=  Also included are the bookkeeping parameters that specify file names.
+=
+SKY = 3250.            Approximate mean sky value in data numbers.
+FWHM = 1.4             Approx FWHM of objects (pixels) along major axis.
+AXIS_RATIO = 0.9       For star objects.  AR=b/a; b=minor axis.
+TILT = 90.0            Angle of major axis in degrees; +x=0; +y=90.
+EPERDN = 1.0           Electrons per data number.
+RDNOISE = 200.         Readout noise in electrons.
+TOP = 1500000          Maximum allowed data value in data numbers.
+=
+AUTOSCALE = 'YES'      Auto-scaling of fitting and masking radii by FWHM.
+AUTOSCALEAP = 'YES'    Auto-scaling of star and sky aperture radii by FWHM.
+AUTOTHRESH = 'NO'      Auto-scaling of thresholds and bottom.
+AUTOBLIT = 'YES'       Auto-scaling of obliteration parameters.
+AUTOMEDSCALE = 'YES'   Auto-scaling for median filter box size.
+= If autoscale=no take these parameters.
+FITRADIUS = 3.0        Radius of the fitting circle.
+MASKRADIUS = 3         Radius of the masking circle.
+= If autoscaleap=no take these parameters.
+APRADIUS = 7.0         Radius of the aperture photometry circle.
+APSKYMIN = 8.0         Inner radius of sky aperture.
+APSKYMAX = 11.0        Outer radius of sky aperture.
+= If autothresh=no take these parameters.
+BOTTOM = -2000.0       Lowest allowed data value in data numbers.
+THRESHMAX = 180000.0    Value of maximum threshold.
+THRESHMIN = 1000.0      Value of lowest threshold.
+=
+VARIABLE_PSF = 'NO'    Use a variable PSF.
+= (JT) Advice: don't mess with APERTURE_PHOT='NO', unclear what happens
+APERTURE_PHOT = 'NO'   Perform just aperture photometry.
+VOLCANO = 'NO'         Find 'volcano' stars.
+MASK_SATURATED = 'YES' Mask/oblitarate saturated stars
+=
+PARAMS_DEFAULT = '../paramdefault'   Default parameters file name.
+PARAMS_OUT = 'u12517j.opar'           Output parameters file name.
+IMAGE_IN = 'u12517j.dresid'            Input image name. 
+=  If desired a file of extra variance can be specified, which is
+=  added to the normal variance of (DATA/eADU)+(RN/eADU)^2.  Note
+=  that it must have proper ADU^2 units of variance 
+IMAGE_VAR = 'u12517j.dvar'             Input extra variance image
+IMAGE_OUT = 'u12517j.dpr'             Output image name.
+OBJECTS_OUT = 'u12517j.dpo'           Output object list file name.
+= (JT) Advice: don't mess with APCORRFILE=' ', it turns on sketchy ap corrections
+APCORRFILE = ' '                     Aperture correction file name.
+LOGVPSF = ' '                        File with log of variable PSF coeffs.
+LOGFILE = 'TERM'                     Log file name.  TERM for screen.
+FINISHFILE = 'u12517j.dfin'           File with finishing info.
+LOGVERBOSITY = 1                     Verbosity of log file; (0-4).
+=
+=  OCCASIONALLY UPDATED PARAMETERS.  These parameters tend to not change for a 
+=  set of images obtained during a single observing run or for frames of a 
+=  single field.  
+=
+RESIDNOISE = 0.3       Fraction of noise to ADD to noise file.
+FOOTPRINT_NOISE = 1.3  Expand stars in noise file by this amount.
+THRESHDEC = 1.2        Threshold decrement in powers-of-2.
+FSUB = 7.0             Limiting distance, in sigmas, for subtractions.
+FOBL = 7.0             Limiting distance, in sigmas, for obliterations.
+ICRIT = 10             Obliterate if # of pixels > TOP exceeds this.
+CENTINTMAX = 2000000   Obliterate if central intensity exceeds this.
+TOPSAT = 1000000       Ignore pixels with higher counts in saturated stars.
+STARGALKNOB = 1.4      Star/galaxy discriminator.
+STARCOSKNOB = 1.0      Object/cosmic-ray discriminator.
+SNLIM7 = 20.0          Minimum S/N for 7-parameter fit.
+SNLIM = 0.0            Minimum S/N for a pixel to be in fit subraster.
+SNLIMMASK = 4.0        Minimum S/N through mask to identify an object.
+SNLIMCOS  = 3.0        Minimum S/N to be called a cosmic ray.
+NBADLEFT = 1           Ignore pixels closer to the left edge than this.
+NBADRIGHT = 1          Ignore pixels closer to the right edge than this.
+NBADTOP = 1            Ignore pixels closer to the top edge than this.
+NBADBOT = 1            Ignore pixels closer to the bottom edge than this.
+NCMIN = 2              Threshold defining cmin (not faint if center > cmin.)
+=
+PSFTYPE = 'PGAUSS'     PSF type: (PGAUSS)
+SKYTYPE = 'MEDIAN'     SKY type: (PLANE, HUBBLE, MEDIAN)
+=
+OBJTYPE_IN = 'INTERNAL'     Input format: (COMPLETE, INTERNAL, BINARY)
+OBJTYPE_OUT = 'COMPLETE'    Output format: (COMPLETE, INTERNAL,INCOMPLETE, BINARY,DAOPHOT)
+AUTOMATCH_TYPE = 'DAOPHOT'  Automatch format: (COMPLETE, INTERNAL, BINARY, DAOPHOT)
+=
+=  AUTO SCALING PARAMETERS.  These parameters are used only if the auto-scaling
+=  flags are turned on.  Radius sizes, and threshold levels can be scaled 
+=  according to the FWHM of objects and the sky and readout noise values.
+=
+=   If autoscale=yes determine parameters using
+SCALEFITRADIUS = 2.0   Size of fitting radius in units of FWHM.
+FITRADIUSMIN = 3.0     Smallest allowed fitting radius size.
+SCALEMASKRADIUS = 1.0  Size of masking radius in units of FWHM.
+MASKRADIUSMIN = 3      Smallest allowed masking radius size.
+=   If autoscaleap=yes determine parameters using
+SCALEAPRADIUS = 3.0    Size of aperture phot radius in units of FWHM.
+APRADIUSMIN = 3.0      Smallest allowed aperture phot radius size.
+APSKYDIST = 1.0        Distance between the aperture circle and sky annulus.
+SCALEAPSKYANNUL = 1.0  Size of sky annulus in units of FWHM.
+APSKYANNULUSMIN = 2.0  Smallest allowed width for the sky annulus.
+=   If autothresh=yes determine parameters using
+SIGMABOTTOM = 15.0     Level of BOTTOM below sky in units of noise.
+SIGMATHRESHMIN = 1.5   Level of THRESHMIN above sky in units of noise.
+=   If autoblit=yes determine parameters using
+ICRITMIN = 4           Minimum value for ICRIT.
+SCALEICRIT = 1.5       Scale of FWHM/2 to determine CENTINTMAX.
+SCALECENT = 2.0        Value of CENTINTMAX in units of TOP.
+SCALETOPSAT = 0.75     Value of TOPSAT in units of TOP.
+=   If automedscale=yes determine parameters using
+SCALEMEDSTEP = 3.5     Size of median filter step in units of FWHM.
+=
+=  SKY FUNCTIONS PARAMETERS. These variables control the parameters of 
+=  the functions used to describe the sky. 
+=
+NPSKYP = 3             No. of PLANE sky function parameters.
+NPSKYH = 7             No. of HUBBLE sky function parameters.
+NSSKYPMIN = 25         Minimum number of stars needed for PLANE sky fit.
+NSSKYHMIN = 100        Minimum number of stars needed for HUBBLE sky fit.
+ITSKYP = 100           No. of iterations to find best PLANE sky parameters.
+ITSKYH = 100           No. of iterations to find best HUBBLE sky parameters.
+MEDSTEP = 7            Step size for filter for MEDIAN sky.
+=
+=  VARIABLE PSF PARAMETERS.  These parameters control the variable psf option.
+=
+NPSFORDER = 1           Order of fit for variable PSF estimation.
+NPSFMIN = 100           Minimum number of stars needed for variable PSF.
+=
+=  APERTURE CORRECTION PARAMETERS.  These parameters are used only if the 
+=  aperture correction flags are turned on.  They control the aperture 
+=  photometry calculations in the stars used for the aperture correction.  
+=
+NAPCMIN = 100          Minimum number of stars to apply aperture corr.
+NAPERTURES = 10        Number of concentric apertures.
+APERRMAX = 0.02        Maximum formal error of stars to use for ap. corr.
+MAPPARMAG = 1          Order of the apcorr poly fit to the magnitude
+MAPPARXY = 2           Order of the apcorr poly fit to the xy axes
+NAPSURFFIT = 7         Concentric aperture to use for polynomial fit
+APFAINTMAG = 14.0      Fainter magnitude to use for polynomial fit
+APMAG_MAXERR = 0.1     Max anticipated error for aperture phot report.
+=
+END

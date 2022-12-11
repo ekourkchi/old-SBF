@@ -1,0 +1,20 @@
+GAIN_*  =                 2.30  /  e/ADU for raw images
+PATOP_* =                  0.0  /  Position angle of top of image
+PALEFT_*=                  0.0  /  Position angle of left of image
+SECPIX_*=                0.128  /  Image scale: arcseconds per pixel
+GALAXY_*= 'UGC03353'            /  Galaxy name
+GALEXT_*=                0.396  /  Galactic extinction (B band)
+REDSHIFT=                 4212  /  Heliocentric redshift (cz, km/s)
+M1_J    =               26.822  /  m1: m for 1 e/sec at top of atm, color=0
+ATMEXT_J=                0.000  /  Atmospheric extinction: mag/airmass
+CTERM_J =                0.000  /  Color term: m=-2.5logf+m_1-A*secz+C*color
+COLOR_J = ''                    /  Color used for color term
+ETIME_J =               2011.7  /  Exposure time (sec)
+SECZ_J  =                0.000  /  Airmass
+E/ADU_J =                 1.00  /  Electrons per ADU in averaged image
+IMAGES_J= ''                    /  Original images comprising summed image
+SKY_J   =               2350.0  /  Sky brightness (e/pixel)
+SEEING_J=                 0.18  /  PSF FWHM (arcsec)
+M1STAR_J=               35.081  /  m1star: m for 1e- net (no MW ext, C=gxy)
+SKYMAG_J=                22.19  /  Sky brightness (mag/arcsec)
+END

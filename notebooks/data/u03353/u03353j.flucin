@@ -1,0 +1,164 @@
+!---make initial mask using SExtractor---
+monsta ../makemask.pro u03353 562 560 300 2550
+ 
+!---create galaxy profile and residual image---
+rd 1 u03353j.fits
+sc 1 2350
+rd 5 u03353j.mask1
+cop 2 1
+mi 2 5
+tv 2 -2000 10000 sqrt
+cop 3 2
+cop 4 2
+elliprof 2 tv x0=562 y0=560 r0=30 r1=500 nr=10 niter=10 model
+elliprof 3 tv x0=562 y0=560 r0=30 r1=520 nr=12 niter=5 model
+elliprof 4 tv x0=562 y0=560 r0=27 r1=550 nr=15 niter=10 model
+! print elliprof  file=skydata/u03353j.sky2550.dat
+ai 2 3
+ai 2 4
+dc 2 3.
+cop 3 1
+si 3 2
+rd 5 u03353j.mask2 bitmap
+mi 3 5
+cop 4 3
+fiterpolate 4 nx=16 ny=16
+tv 4
+! fiterpolate 4 edit
+cop 3 1
+si 3 2
+si 3 4
+rd 5 u03353j.dmask
+mi 3 5
+tv 3
+wd 2 u03353j.prf
+wd 3 u03353j.resid
+wd 4 u03353j.fiterpolate
+ 
+!---Check sky values, compare to r^1/4 profiles using sky.pl---
+rd 1 u03353j.fits
+rd 2 u03353j.mask1
+cop 3 1
+cop 4 1
+cop 5 1
+cop 6 1
+cop 7 1
+cop 8 1
+cop 9 1
+cop 10 1
+cop 11 1
+cop 12 1
+sc 3 2850
+sc 4 2750
+sc 5 2650
+sc 6 2550
+sc 7 2450
+sc 8 2350
+sc 9 2250
+sc 10 2150
+sc 11 2050
+sc 12 1550
+mi 3 2
+mi 4 2
+mi 5 2
+mi 6 2
+mi 7 2
+mi 8 2
+mi 9 2
+mi 10 2
+mi 11 2
+mi 12 2
+tv 3 sqrt
+elliprof 3 tv x0=562 y0=560 r0=30 r1=550 nr=15 niter=10 rmstar model
+print elliprof  file=skydata/u03353j.sky2850.dat
+elliprof 4 tv x0=562 y0=560 r0=30 r1=550 nr=15 niter=10 rmstar model
+print elliprof  file=skydata/u03353j.sky2750.dat
+elliprof 5 tv x0=562 y0=560 r0=30 r1=550 nr=15 niter=10 rmstar model
+print elliprof  file=skydata/u03353j.sky2650.dat
+elliprof 6 tv x0=562 y0=560 r0=30 r1=550 nr=15 niter=10 rmstar model
+print elliprof  file=skydata/u03353j.sky2550.dat
+elliprof 7 tv x0=562 y0=560 r0=30 r1=550 nr=15 niter=10 rmstar model
+print elliprof  file=skydata/u03353j.sky2450.dat
+elliprof 8 tv x0=562 y0=560 r0=30 r1=550 nr=15 niter=10 rmstar model
+print elliprof  file=skydata/u03353j.sky2350.dat
+elliprof 9 tv x0=562 y0=560 r0=30 r1=550 nr=15 niter=10 rmstar model
+print elliprof  file=skydata/u03353j.sky2250.dat
+elliprof 10 tv x0=562 y0=560 r0=30 r1=550 nr=15 niter=10 rmstar model
+print elliprof  file=skydata/u03353j.sky2150.dat
+elliprof 11 tv x0=562 y0=560 r0=30 r1=550 nr=15 niter=10 rmstar model
+print elliprof  file=skydata/u03353j.sky2050.dat
+elliprof 12 tv x0=562 y0=560 r0=30 r1=550 nr=15 niter=10 rmstar model
+print elliprof  file=skydata/u03353j.sky1550.dat
+ 
+!---Source Extractor and Dophot prep---
+rd 1 u03353j.fits
+rd 2 u03353j.prf
+mc 2 3 ! renuc factor
+ai 2 1
+wd 2 u03353j.var
+mc 2 2 ! (Dophot usually needs 2x larger renuc factor)
+wd 2 u03353j.dvar
+ 
+! This part will be done automatically by hybridPr.sh
+! rd 1 u03353j.resid
+! rd 2 u03353segalj.ptm6b
+! mi 2 1
+! wd 2 u03353j.dresid
+ 
+!---Extract PSF stars---
+rd 1 rawdata/u03353j.forpsfs.fits
+mc 1 2011.7  ! multiply by exposure time
+sc 1 2350
+shift 1  dx=8 dy=8
+rd 2 u03353j.prf
+si 1 2
+cop 2 1
+cop 3 1
+box 1 nc=64 nr=64 cc=561 cr=263
+box 2 nc=64 nr=64 cc=779 cr=523
+box 3 nc=64 nr=64 cc=826 cr=573
+wind 1 box=1
+wind 2 box=2
+wind 3 box=3
+tv 1 sqrt
+tidy 1 rad=1
+tv 2 sqrt
+tidy 2 rad=1
+tv 3 sqrt
+tidy 3 rad=1
+wd 1 u03353j.psf1
+wd 2 u03353j.psf2
+wd 3 u03353j.psf3
+ 
+!---Automated Pr GCLF and galaxy fitting---
+../hybridPr.sh u03353 58 1.4
+ 
+!---Automated SBF analysis---
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/combinedj.on.psf.16262 4 20
+monsta ../sbfwfc3.pro u03353 sej 562 560 25 50 ../psflibrary/combinedj.on.psf.16262 4 20
+ 
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 u03353j.psf1 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 u03353j.psf2 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 u03353j.psf3 4 20
+ 
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/combinedj.on.bright.psf.16262 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/combinedj.on.psf.16262 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/combinedj.psf.16262 4 20
+ 
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/combinedj.on.bright.psf.14219 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/combinedj.bright.psf.14219 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/combinedj.on.psf.14219 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/combinedj.psf.14219 4 20
+ 
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/n4874j.psf 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/n0315j.psf 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/n0383j.psf 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/n0665j.psf 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/n2672j.psf 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/n1167j.psf1 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/n1167j.psf2 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/n0708j.psf1 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/n0708j.psf2 4 20
+ 
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/combinedj.psf.11712 4 20
+monsta ../sbfwfc3.pro u03353 doj 562 560 25 50 ../psflibrary/combinedj.on.psf.14654 4 20

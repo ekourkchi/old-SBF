@@ -1,0 +1,67 @@
+ Autoclean 4.25                
+
+
+SCALE   =                   1  / 0/1/2/3 for auto/exp/mean/manual
+OUTPUT  =                   0  / 0/1 for floating/16-bit
+AVESUM  =                   0  / 0/1/2/3 for sum/average/median/wgtave
+BSCALE  =              1.0000  / scale factor (e/ADU)
+MASK    =                   0  / 0/1 for masked (x) files
+SCOUR   =                   1  / 0/1 for second pass scouring
+EXPTIME =          'EXPTIME '  / keyword: exp time
+SCALEIN =              1.0000  / input scale factor
+SCALEX1 =                   0  / scale area x1
+SCALEX2 =                1024  / scale area x2
+SCALEY1 =                   0  / scale area y1
+SCALEY2 =                1021  / scale area y2
+NBIN    =                   1  / binning for autoscale
+BIAS    =                   0  / bias for mean scaling
+PERCLO  =              0.1000  / lower fit percentile
+PERCHI  =              0.9900  / upper fit percentile
+YLO     =             40.0000  / lower fit pixel value
+YHI     =            858.9806  / upper fit pixel value
+THRESH  =             25.0000  / threshold to be bad
+BAD     =              5.0000  / #sigma for immediate deletion
+POOR    =              3.0000  / #sigma if neighbor bad
+GRAD    =                   2  / radius for local gradient
+DOMINO  =                   2  / max dist to propagate
+
+         Filename            dx    dy    nx    ny   exp
+File  1  u03353j.001          0     0  1014  1014   503
+File  2  u03353j.002         -8    -3  1014  1014   503
+File  3  u03353j.003         -5    -8  1014  1014   503
+File  4  u03353j.004          3    -5  1014  1014   503
+
+      0.100     0.990 percentiles at pixel value       40.00      858.98
+
+Gain (e/ADU from ave/var) =   8.079
+
+   N    dX    dY    t   #1 = A * #i  +  B       r      flux      sky      rms
+   1     0     0   503   1.0000      0.000   1.0000   1.0000      0.00    1.00
+   2    -8    -3   503   1.0000     -1.390   1.0000   1.0000      0.00    1.00
+   3    -5    -8   503   1.0000     -3.290   1.0000   1.0000      0.00    1.00
+   4     3    -5   503   1.0000    -40.040   1.0000   1.0000      0.00    1.00
+
+Row  100:    1261 CR pixels zapped
+Row  200:    2112 CR pixels zapped
+Row  300:    2953 CR pixels zapped
+Row  400:    3720 CR pixels zapped
+Row  500:    4485 CR pixels zapped
+Row  600:    5110 CR pixels zapped
+Row  700:    5774 CR pixels zapped
+Row  800:    6539 CR pixels zapped
+Row  900:    7315 CR pixels zapped
+Row 1000:    8429 CR pixels zapped
+
+ BSCALE =   1.0000000000000000         nzap =        9767
+
+SCTHR   =             25.0000  / scouring threshold
+SCBAD   =              5.0000  / scouring #sigma bad
+SCPOOR  =              3.0000  / scouring #sigma poor
+SCASYM  =              0.4000  / scouring asymmetry
+
+Image  1:       5 extra CR pixels zapped
+Image  2:       8 extra CR pixels zapped
+Image  3:      12 extra CR pixels zapped
+Image  4:       4 extra CR pixels zapped
+
+Estimated cloud extinction =-0.000 mag

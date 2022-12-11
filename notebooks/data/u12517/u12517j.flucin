@@ -1,0 +1,118 @@
+!---make initial mask using SExtractor---
+monsta ../makemask.pro u12517 567 562 250 3250
+
+!---sky and elliptical fits---
+rd 1 u12517j.fits
+sc 1 3250 ! r1/4 value
+! sc 1 200. ! sky uncertainty
+rd 5 u12517j.mask1 bitmap
+cop 2 1
+mi 2 5
+tv 2 sqrt
+cop 3 2
+cop 4 2
+elliprof 2 tv x0=567 y0=562 r0=3 r1=530 nr=25 niter=10 rmstar model
+elliprof 3 tv x0=567 y0=562 r0=5 r1=510 nr=30 niter=10 rmstar model
+elliprof 4 tv x0=567 y0=562 r0=4 r1=550 nr=25 niter=10 rmstar model
+! print elliprof  file=skydata/u12517j.sky3250.dat
+ai 2 3
+ai 2 4
+dc 2 3.
+cop 3 1
+si 3 2
+rd 5 u12517j.mask2 bitmap
+mi 3 5
+cop 4 3
+fiterpolate 4 nx=10 ny=10 
+tv 4
+! fiterpolate 4 edit
+cop 3 1
+si 3 2
+si 3 4
+rd 5 u12517j.dmask
+mi 3 5
+tv 3
+wd 2 u12517j.prf
+wd 3 u12517j.resid
+wd 4 u12517j.fiterpolate
+
+!--Source Extractor prep
+rd 1 u12517j.fits
+rd 2 u12517j.prf
+mc 2 1.5 ! renuc factor
+ai 2 1
+wd 2 u12517j.var
+
+!--Dophot prep
+rd 2 u12517j.prf
+mc 2 3 ! renuc factor
+wd 2 u12517j.dvar
+
+!rd 1 u12517j.resid
+!rd 2 u12517segalj.ptm6b
+!mi 2 1
+!wd 2 u12517j.dresid
+
+!---PSF---
+! rd 1 u12517j.resid
+rd 1 rawdata/u12517j.forpsfs.fits
+mc 1 502.936
+mc 1 4.
+sc 1 3250.
+shift 1  dx=8 dy=8
+rd 2 u12517j.prf
+si 1 2
+tv 1
+cop 2 1
+box 1 nc=64 nr=64 cc=104 cr=805
+box 2 nc=64 nr=64 cc=819 cr=441
+wind 1 box=1
+wind 2 box=2
+tv 1 log
+tidy 1 rad=1
+tv 2 log
+tidy 2 rad=1
+wd 1 u12517j.psf1
+wd 2 u12517j.psf2
+
+!-----automated Pr GCLF and galaxy fitting------
+! bash shell that calls SExtractor, Dophot, and likenewj
+
+../hybridPr.sh u12517 72 1.4
+
+
+!-----automated SBF radial analysis-----
+
+monsta ../sbfwfc3.pro u12517 sej 567 562 25 50 ../psflibrary/combinedj.bright.psf.14219 4 20 ! 
+monsta ../sbfwfc3.pro u12517 doj 567 562 25 50 ../psflibrary/combinedj.bright.psf.14219 4 20 ! 
+
+monsta ../sbfwfc3.pro u12517 sej 567 562 25 50 ../psflibrary/combinedj.on.bright.psf.14219 4 20 ! 
+monsta ../sbfwfc3.pro u12517 doj 567 562 25 50 ../psflibrary/combinedj.on.bright.psf.14219 4 20 ! 
+
+monsta ../sbfwfc3.pro u12517 sej 567 562 25 50 ../psflibrary/combinedj.on.psf.14219 4 20
+monsta ../sbfwfc3.pro u12517 doj 567 562 25 50 ../psflibrary/combinedj.on.psf.14219 4 20 ! 
+
+monsta ../sbfwfc3.pro u12517 sej 567 562 25 50 ../psflibrary/combinedj.psf.14219 4 20
+monsta ../sbfwfc3.pro u12517 doj 567 562 25 50 ../psflibrary/combinedj.psf.14219 4 20
+
+monsta ../sbfwfc3.pro u12517 sej 567 562 25 50 n0057j.psf1 4 20 ! good fits
+monsta ../sbfwfc3.pro u12517 doj 567 562 25 50 n0057j.psf1 4 20
+
+!--------------
+! PSF uncertainty
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/combinedj.bright.psf.14219 4 20 
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/combinedj.on.bright.psf.14219 4 20 
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/combinedj.on.psf.14219 4 20 
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/combinedj.psf.14219 4 20
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/n4874j.psf 4 20
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/n0315j.psf 4 20
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/n0383j.psf 4 20
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/n0665j.psf 4 20
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/n2672j.psf 4 20
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/n1167j.psf1 4 20
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/n1167j.psf2 4 20
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/n0708j.psf1 4 20
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/n0708j.psf2 4 20
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 n0057j.psf1 4 20
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/combinedj.psf.11712 4 20
+monsta ../sbfwfc3.pro ic4798 sej 562 559 25 50 ../psflibrary/combinedj.on.psf.14654 4 20

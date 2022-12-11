@@ -1,0 +1,41 @@
+#-------------------------------- Catalog ------------------------------------
+CATALOG_NAME     u03353j.cat      # name of the output catalog
+PARAMETERS_NAME  /usr/local/lib/sextractor/sbf.param    # name of the file containing catalog contents
+ 
+#------------------------------- Extraction ----------------------------------
+DETECT_MINAREA   4              # minimum number of pixels above threshold
+DETECT_THRESH    1.7            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+ANALYSIS_THRESH  1.7            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+FILTER           Y              # apply filter for detection (Y or N)?
+FILTER_NAME      /usr/local/lib/sextractor//gauss_2.0_5x5.conv
+DEBLEND_NTHRESH  32             # Number of deblending sub-thresholds
+DEBLEND_MINCONT  0.01           # Minimum contrast parameter for deblending
+WEIGHT_TYPE      MAP_VAR
+WEIGHT_IMAGE     u03353j.var
+ 
+#------------------------------ Photometry -----------------------------------
+PHOT_FLUXFRAC     0.5
+PHOT_APERTURES    4,4.69,5,8,10   # MAG_APER aperture diameter(s) in pixels
+PHOT_AUTOPARAMS  2.5,3.3       # MAG_AUTO parameters: <Kron_fact>,<min_radius>
+SATUR_LEVEL     2600000        # level (in ADUs) at which arises saturation
+MAG_ZEROPOINT    35.081        # magnitude zero-point
+GAIN             1.0           # detector gain in e-/ADU
+PIXEL_SCALE      0.128         # size of pixel in arcsec (0=use FITS WCS info)
+ 
+#------------------------- Star/Galaxy Separation ----------------------------
+SEEING_FWHM      0.18         # stellar FWHM in arcsec
+STARNNW_NAME     /usr/local/lib/sextractor/default.nnw    # Neural-Network_Weight table filename
+  
+#------------------------------ Background -----------------------------------
+BACK_SIZE        40            # Background mesh: <size> or <width>,<height>
+BACK_FILTERSIZE  3             # Background filter: <size> or <width>,<height>
+BACKPHOTO_TYPE  LOCAL         # can be GLOBAL or LOCAL
+ 
+#------------------------------ Check Image ----------------------------------
+CHECKIMAGE_TYPE  APERTURES,BACKGROUND,OBJECTS
+CHECKIMAGE_NAME  u03353j.aps,u03353j.bg,u03353j.obj
+ 
+#--------------------- Memory (change with caution!) -------------------------
+MEMORY_OBJSTACK  10000
+MEMORY_PIXSTACK  2600000
+MEMORY_BUFSIZE   6000           # number of lines in buffer

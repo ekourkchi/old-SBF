@@ -1,0 +1,78 @@
+ From frame header: NX, NY =   1025  1022
+ From variance header: NX, NY =   1025  1022
+
+   Starting loop at thresh =    147033.38943962040     
+  Formed median 
+ average values so far of 7 parameters for stars:
+   1200.3546457070900        239960.46846225404        643.74269280323779        573.68098304967873       0.26922793833605752        3.7611155515744582E-003  0.32692629166658643     
+  Formed median 
+  Ending loop at thresh =  147033.4
+  Number of new objects found =       4
+  Total number of objects found so far =       4
+  
+
+   Starting loop at thresh =    64000.000000000000     
+  Formed median 
+ average values so far of 7 parameters for stars:
+   603.00854553495435        104913.24001648932        537.50378368895440        481.54488743121323       0.27270539249658937        5.9525278787364050E-002  0.30717013330408055     
+  Formed median 
+  Ending loop at thresh =   64000.0
+  Number of new objects found =      14
+  Total number of objects found so far =      18
+  
+
+   Starting loop at thresh =    27857.618025475967     
+  Formed median 
+ scatter:    0.0000000000000000        0.0000000000000000        3.6179684454334883E-006   4.7181934014355571E-006   1.4028561792209369E-002   7.3210669533716036E-002   2.2337230835461266E-002
+ average values so far of 7 parameters for stars:
+   297.31297058899713        43887.436858636494        571.98993179453544        490.72428363166222       0.27123919364641214        3.8137446873753603E-002  0.30988410507962749     
+  Formed median 
+  Ending loop at thresh =   27857.6
+  Number of new objects found =      21
+  Total number of objects found so far =      39
+  
+
+   Starting loop at thresh =    12125.732532083182     
+  Formed median 
+ scatter:    0.0000000000000000        0.0000000000000000        2.8944762576135894E-005   2.4009847736741502E-005   1.5111302325775034E-002   7.6696398654679226E-002   2.2110528839697899E-002
+ average values so far of 7 parameters for stars:
+   137.57402101520324        21356.692619179510        555.37523382388599        516.60583532365388       0.27329697041298567        3.2970109850885443E-002  0.31388968121169397     
+  Formed median 
+  Ending loop at thresh =   12125.7
+  Number of new objects found =      44
+  Total number of objects found so far =      83
+  
+
+   Starting loop at thresh =    5278.0316430915764     
+  Formed median 
+ scatter:    0.0000000000000000        0.0000000000000000        1.2201987958553966E-004   1.0719029367481932E-004   1.6485970505939654E-002   8.4091109362112323E-002   2.4416484978478977E-002
+ average values so far of 7 parameters for stars:
+   54.479243826480783        9700.0570820276153        548.63599780737036        516.48173234806552       0.27205731869272803        2.7737147896748467E-002  0.31414881027649527     
+  Formed median 
+  Ending loop at thresh =    5278.0
+  Number of new objects found =      97
+  Total number of objects found so far =     180
+  
+
+   Starting loop at thresh =    2297.3967099940696     
+  Formed median 
+ scatter:    0.0000000000000000        0.0000000000000000        5.9313472124993038E-004   3.0543550538366960E-004   1.7100398154046091E-002   9.2725325932297056E-002   2.3860039289043518E-002
+ average values so far of 7 parameters for stars:
+   28.372497694337408        5631.7365556186060        555.32683486789369        509.21483417419580       0.27288625863443372        1.6739437546109348E-002  0.31360622815511374     
+  Formed median 
+  Ending loop at thresh =    2297.4
+  Number of new objects found =     184
+  Total number of objects found so far =     364
+  
+
+   Starting loop at thresh =    1000.0000000000000     
+  Formed median 
+ scatter:    0.0000000000000000        0.0000000000000000        6.2119463879342701E-003   1.0703247439644748E-002   1.7854419436618797E-002   9.5455327235268575E-002   2.4364112904260559E-002
+ average values so far of 7 parameters for stars:
+   19.807004422830513        4458.1693384818955        550.17092935921960        509.64959460918442       0.27305596335663573        1.3307828049495304E-002  0.31411530269658094     
+  Formed median 
+  Ending loop at thresh =    1000.0
+  Number of new objects found =     255
+  Total number of objects found so far =     619
+  
+ nap,napcmin =           23         100

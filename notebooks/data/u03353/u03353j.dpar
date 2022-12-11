@@ -1,0 +1,36 @@
+= u03353 GO-16262
+SKY = 2350             Approximate mean sky value in data numbers.
+FWHM = 1.4             Approx FWHM of objects (pixels) along major axis.
+AXIS_RATIO = 0.9       For star objects.  AR=b/a; b=minor axis.
+TILT = 90.0            Angle of major axis in degrees; +x=0; +y=90.
+EPERDN = 1.0           Electrons per data number.
+RDNOISE = 200.         Readout noise in electrons.
+TOP = 2600000          Maximum allowed data value in data numbers.
+=
+AUTOSCALE = 'YES'      Auto-scaling of fitting and masking radii by FWHM.
+AUTOSCALEAP = 'YES'    Auto-scaling of star and sky aperture radii by FWHM.
+AUTOTHRESH = 'NO'      Auto-scaling of thresholds and bottom.
+AUTOBLIT = 'YES'       Auto-scaling of obliteration parameters.
+AUTOMEDSCALE = 'YES'   Auto-scaling for median filter box size.
+= If autothresh=no take these parameters.
+BOTTOM = -2000.0       Lowest allowed data value in data numbers.
+THRESHMAX = 1300000    Value of maximum threshold.
+THRESHMIN = 1000.0     Value of lowest threshold.
+=
+PARAMS_DEFAULT = '../paramdefault'   Default parameters file name.
+IMAGE_IN = 'u03353j.dresid'            Input image name. 
+=  If desired a file of extra variance can be specified, which is
+=  added to the normal variance of (DATA/eADU)+(RN/eADU)^2.  Note
+=  that it must have proper ADU^2 units of variance 
+IMAGE_VAR = 'u03353j.dvar'             Input extra variance image
+IMAGE_OUT = 'u03353j.dpr'             Output image name.
+OBJECTS_OUT = 'u03353j.dpo'           Output object list file name.
+FINISHFILE = 'u03353j.dfin'           File with finishing info.
+CENTINTMAX = 2600000   Obliterate if central intensity exceeds this.
+TOPSAT = 2600000      Ignore pixels with higher counts in saturated stars.
+=
+OBJTYPE_IN = 'INTERNAL'     Input format: (COMPLETE, INTERNAL, BINARY)
+OBJTYPE_OUT = 'COMPLETE'    Output format: (COMPLETE, INTERNAL,INCOMPLETE, BINARY,DAOPHOT)
+=   If autoscaleap=yes determine parameters using
+SCALEAPRADIUS = 3.0    Size of aperture phot radius in units of FWHM.
+END
