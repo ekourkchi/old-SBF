@@ -9,6 +9,12 @@ then
     mkdir $pwd"/bin"
 fi
 
+if [ !  -d "./lib" ] 
+then
+    mkdir $pwd"/lib"
+fi
+
+
 
 function setup_xpa() {
     cd xpa
