@@ -21,4 +21,8 @@ import matplotlib.image as img
 import ipywidgets as widgets
 import warnings
 
+os.environ['PATH'] = os.path.dirname(__file__)+'/bin:' + os.environ['PATH']
+
 from .py import *
+
+

@@ -851,3 +851,44 @@ def populate_dict(objDict, inDict):
         objDict[key] = inDict[key]
 
     return objDict
+
+####################################### Set Axes
+def set_axes(ax, xlim=None, ylim=None, fontsize=16, twinx=True, twiny=True, minor=True, inout='in'):
+        
+        if not ylim is None:
+            ax.set_ylim(ylim)
+        else:
+            ylim = ax.get_ylim() 
+            
+        if not xlim is None:    
+            ax.set_xlim(xlim) 
+        else:
+            xlim = ax.get_xlim()
+            
+        ax.tick_params(which='major', length=8, width=1., direction=inout)
+#         if minor:
+        ax.tick_params(which='minor', length=4, color='#000033', width=1.2, direction=inout)  
+        
+        if twiny:
+            y_ax = ax.twinx()
+            y_ax.set_ylim(ylim)
+            y_ax.set_yticklabels([])
+            y_ax.minorticks_on()
+            y_ax.tick_params(which='major', length=8, width=1., direction=inout)
+            if minor:
+                y_ax.tick_params(which='minor', length=4, color='#000033', width=1.2, direction=inout) 
+        
+        if twinx:
+            x_ax = ax.twiny()
+            x_ax.set_xlim(xlim)
+            x_ax.set_xticklabels([])
+            x_ax.minorticks_on()
+            x_ax.tick_params(which='major', length=8, width=1.2, direction=inout)
+            if minor:
+                x_ax.tick_params(which='minor', length=4, color='#000033', width=1.2, direction=inout)  
+                
+        ax.xaxis.set_tick_params(labelsize=16)
+        ax.yaxis.set_tick_params(labelsize=16)
+
+
+        return x_ax, y_ax
