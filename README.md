@@ -6,6 +6,14 @@
 
 -**pysbf**: hols the library of codes to support the high level notebooks
 
+## Requirements <a name="Requirements"></a>
+
+This pakcges requires that users have already installed  the following codes
+
+1- **Source Extractor**: This software should be accessible by the CLI command `sex` 
+2- **Monsta**: This software should be accessible by the CLI command `sex` 
+
+The instruction on how to install other dependencies is available [https://github.com/ekourkchi/SBF/tree/main/pysbf#readme](here).
 
 ## Disclaimer <a name="Disclaimer"></a>
 
