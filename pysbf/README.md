@@ -1,17 +1,30 @@
 ## Hot to install likenew6
 
-1- open a terminal
+- open a terminal
 
-2- go to the `<path>/pysbf/sbfsrc` folder
+- go to the `<path>/pysbf` folder
 
-3- run:
+- run:
 
-`make all; mv likenew6.so ../lib/.`
+`bash setup.sh`
 
-4- to clean the intermediate object files
+to install all the following packages and use
 
-`make clean`
+`bash setup.sh <package>`
 
-5- open jupyter notebook `</path/>pysbf/test/test_likenew.ipynb` and make
+to install any specific one, `<package>` is replaced by
+
+-likenew: to install likenew
+-dophot: to install dophot
+-xpa: to install xpa command functions to control `ds9`  
+
+## Where are binary files
+
+After installing each package, all binary files are stored in `<path>/pysbf/bin`.
+Make sure you update the `PATH` environmental variable of your system accordingly.
+
+## Hot to test likenew6
+
+- open jupyter notebook `</path/>pysbf/test/test_likenew.ipynb` and make
 sure that all cells are successfully executed
 
