@@ -14,9 +14,9 @@ to install all the following packages and use
 
 to install any specific one, `<package>` is replaced by
 
-- likenew: to install likenew
-- dophot: to install dophot
-- xpa: to install xpa command functions to control `ds9`  
+  - likenew: to install likenew
+  - dophot: to install dophot
+  - xpa: to install xpa command functions to control `ds9`  
 
 ## Where are binary files
 
