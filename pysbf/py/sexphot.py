@@ -30,7 +30,7 @@ def SExtract(model=0, smooth=None, minArea=10, mask=None, thresh=2, \
     objName = root + "/objCheck" + suffix
     objCatal = root + "/objCatal" + suffix
     maskName = root + "/mask" + suffix_mask
-    sex_obj_maskName = root + "/mask_sej" + suffix
+    sex_obj_maskName = root + "/mask_se" + suffix
     model_mask = root + "/mask" + ".%03d" % model
     tmp = root + "/smooth"
 
@@ -111,7 +111,7 @@ def SExtract(model=0, smooth=None, minArea=10, mask=None, thresh=2, \
     variance = modelName
 
     if True: # renuc is not None and renuc != 1:
-        variance = root + "/model" + suffix + "_renuc_" + str(renuc)
+        variance = root + "/model" + suffix + "_se_renuc_" + str(renuc)
         script = (
             """
         rd 1 """
@@ -153,7 +153,7 @@ def SExtract(model=0, smooth=None, minArea=10, mask=None, thresh=2, \
     imarray = seg2mask(segment, objName, good_segments=good_segments, object_mask=True)
 
     ## Monsta script
-    sex_obj_masked = root + "/masked_sej" + suffix
+    sex_obj_masked = root + "/masked_se" + suffix
     script = (
         """
     rd 1 """
@@ -183,7 +183,7 @@ def SExtract(model=0, smooth=None, minArea=10, mask=None, thresh=2, \
 
     print(root + "obj" + suffix + ".pro")
 
-    sex_obj_maskName = root + "/mask_sej" + suffix
+    sex_obj_maskName = root + "/mask_se" + suffix
 
     return objCatal, df, objName, sex_obj_maskName, sex_obj_masked, residName
 

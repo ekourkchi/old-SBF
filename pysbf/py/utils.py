@@ -675,6 +675,11 @@ def Xellipses(ells):
 ##############################################################
 def open_log_df(logName):
 
+    if not exists(logName):
+        print("There is no log-file. \nPlease run elliprof to generate the log file and the relevant plots.")
+        print("Elliprof notebook name: \"Run_elliprof_function.ipynb\"")
+        return None
+
     with open(logName, "r") as f:
         lines = f.readlines()
 
@@ -892,3 +897,86 @@ def set_axes(ax, xlim=None, ylim=None, fontsize=16, twinx=True, twiny=True, mino
 
 
         return x_ax, y_ax
+
+####################################### 
+class Logtext:
+    
+    def __init__(self, text_file, label):
+        
+        with open(text_file, "r") as f:
+            dparfile = f.readlines()
+        self.text = "".join(dparfile)
+        self.label = label        
+        self.button = widgets.Button(description='Open {} ...'.format(label))
+        self.button.on_click(self.clicked)
+        self.text_wgt = widgets.Textarea(
+                                    value='',
+                                    placeholder='Paste ticket description here!',
+                                    description=label+' : ' + text_file,
+                                    disabled=False,
+                                    style={'description_width': 'initial'},
+                                    layout = widgets.Layout(width='800px', height='300px')
+                                    )
+        self.text_wgt.value = self.text
+        self.text_wgt.layout.display = 'none'
+        self.status = False
+        self.widgets = [self.text_wgt, self.button]
+        self.box = widgets.HBox(self.widgets)        
+        self.display()
+    
+    def display(self):
+        display(self.box) 
+        
+    def clicked(self, _):
+        self.on_off()
+
+    def on_off(self):
+        if self.status:
+            self.text_wgt.layout.display = 'none'
+            self.status = False
+            self.button.description = 'Open {} ...'.format(self.label)
+        else:
+            self.text_wgt.layout.display = 'block' 
+            self.status = True
+            self.button.description = 'Close ...'
+
+####################################### 
+class CMD_button:
+    
+    def __init__(self, command, label):
+                    
+        self.command = command
+        self.button = widgets.Button(description=label)
+        self.button.on_click(self.clicked)
+        
+        display(widgets.VBox([self.button]))
+        
+    def clicked(self, _):
+        self.run_command()
+
+    def run_command(self):
+        os.system(self.command)
+
+#######################################
+class ds9_region_display:
+    
+    def __init__(self, reg_file="./ds9.reg"):
+                    
+        self.status = True
+        self.reg_file = reg_file
+        self.button = widgets.Button(description='Regions On/Off')
+        self.button.on_click(self.clicked)
+        os.system("xpaset -p ds9 regions delete all")
+        os.system("xpaset -p ds9 regions "+reg_file+" &")
+        display(widgets.VBox([self.button]))
+        
+    def clicked(self, _):
+        self.on_off()
+
+    def on_off(self):
+        if self.status:
+            os.system("xpaset -p ds9 regions delete all")
+            self.status=False
+        else:
+            os.system("xpaset -p ds9 regions "+self.reg_file+" &")
+            self.status=True  
