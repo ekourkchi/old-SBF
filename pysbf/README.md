@@ -18,12 +18,12 @@ to install any specific one, `<package>` is replaced by
 - dophot: to install dophot
 - xpa: to install xpa command functions to control `ds9`  
 
-## Where are binary files
+## Where are the binary files?
 
 After installing each package, all binary files are stored in `<path>/pysbf/bin`.
 Make sure you update the `PATH` environmental variable of your system accordingly.
 
-## Hot to test likenew6
+## Hot to test likenew6?
 
 - open jupyter notebook `</path/>pysbf/test/test_likenew.ipynb` and make
 sure that all cells are successfully executed
