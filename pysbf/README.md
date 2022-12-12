@@ -1,4 +1,4 @@
-## Hot to install likenew6
+## Easy setup instruction
 
 - open a terminal
 
