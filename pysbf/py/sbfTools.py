@@ -149,10 +149,13 @@ class SBFobject:
 
         if fits_file is None:
             name = self.name
-            fits_file = self.inFolder + "{}/{}j.fits".format(name, name)
+            fits_file = "{}j.fits".format(name)
 
         root = self.objRoot
         jpg_name = root + "tv.jpg"
+
+        cwd = os.getcwd()
+        os.chdir(self.inFolder+"/{}".format(name))
 
         ## Monsta script
         script = (
@@ -165,15 +168,18 @@ class SBFobject:
             + """
         tv 1 """
             + options
-            + """ JPEG="""
-            + jpg_name
-            + """
+            + """ JPEG=tv.jpg
         q
         
         """
         )
 
-        self.run_monsta(script, root + "tv.pro", root + "tv.log")
+        self.run_monsta(script, "./" + "tv.pro", "./" + "tv.log")
+
+        print(os.getcwd())
+        xcmd("cp ./tv.jpg "+os.path.join(cwd,jpg_name), verbose=True)
+        os.chdir(cwd)
+
         return self.plot_jpg(jpg_name, ax=ax)
 
     def SExtract(self):

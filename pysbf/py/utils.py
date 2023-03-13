@@ -176,7 +176,6 @@ def run_monsta(script, Monsta_pro, Monsta_log, monsta="monsta", silent=False):
 
 ##############################################################
 
-
 def get_extinction(ra, dec):
     URL = (
         """http://ned.ipac.caltech.edu/ffs/sticky/CmdSrv?cmd=tableSave&request=%7B%22startIdx%22%3A0%2C%22pageSize%22%3A2147483647%2C%22filters%22%3A%22%22%2C%22source%22%3A%22http%3A%2F%2Fned.ipac.caltech.edu%2Fcgi-bin%2Fcalc%3Fin_csys%3DEquatorial%26out_csys%3DEquatorial%26in_equinox%3DJ2000.0%26out_equinox%3DJ2000.0%26obs_epoch%3D2000.0%26of%3Dxml_main%26ext%3D1%26lon%3D"""
@@ -603,7 +602,8 @@ def imOpen(inFits):
 ##############################################################
 
 
-def seg2mask(inFits, outMask, overwrite=True, seg_num=0, good_segments=[0], object_mask=False):
+def seg2mask(inFits, outMask, overwrite=True, seg_num=0, good_segments=[0], 
+            object_mask=False, invert=False):
 
     imarray, header = imOpen(inFits)
 
@@ -614,8 +614,13 @@ def seg2mask(inFits, outMask, overwrite=True, seg_num=0, good_segments=[0], obje
 
     if object_mask:
         imarray[((imarray == 0))] = -1  # backgrounds --> good pixel
-    imarray[(imarray != -1)] = 0  # masked
-    imarray[imarray == -1] = 1  # good pixel
+
+    if not invert:
+        imarray[(imarray != -1)] = 0  # masked
+        imarray[imarray == -1] = 1  # good pixel
+    else:
+        imarray[(imarray != -1)] = 1  # masked
+        imarray[imarray == -1] = 0  # good pixel        
 
     fits.writeto(outMask, np.float32(imarray), header, overwrite=overwrite)
 

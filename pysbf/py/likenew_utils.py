@@ -151,7 +151,7 @@ def read_lkn6(fname):
     return header, (df1, df2, df3), R_dict
     ########################################################################################
     
-def likenew_plot(lkn6_name, header, tables, radii):
+def likenew_plot_old(lkn6_name, header, tables, radii):
     
     fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15,10))
 
@@ -204,6 +204,71 @@ def likenew_plot(lkn6_name, header, tables, radii):
     _ = plt.suptitle(s + "          "+lkn6_name, fontsize=12, y=0.91, x=0.4, color="maroon")
     
     return axes
+############################################################
+def likenew_plot(lkn6_name, header, tables, radii):
+    
+    fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15,10))
+
+    df1, df2, df3 = tables
+
+    for i in range(6):
+
+        ii = i%3
+        jj = (i-ii)//3
+        ax = axes[jj][ii]
+
+        idx = (i+1)%6+1
+        ax.plot(df1.m, df1["n_m"+str(idx)], 'D')
+        ax.plot(df2.m, df2["GC_"+str(idx)], '-')
+        ax.plot(df2.m, df2["both_"+str(idx)], '-')
+        ax.plot(df2.m, df2.gxy, 'k:')
+
+        r1 = radii["r"+str(idx)][0]
+        r2 = radii["r"+str(idx)][1]
+        ax.text(0.1, 0.85, r1+"<r<"+r2, fontsize=16, color='k', transform=ax.transAxes)
+
+        ax.set_yscale("log")
+#         x_ax, y_ax = set_axes(ax, xlim=(18.5,27.5), ylim=(0.5,2000), fontsize=14)
+#         y_ax.set_yscale("log")
+        ax.xaxis.set_tick_params(labelsize=16)
+        ax.yaxis.set_tick_params(labelsize=16)
+        ax.tick_params(which='major', length=8, width=1., direction='in')
+#         if minor:
+        ax.tick_params(which='minor', length=4, color='#000033', width=1.2, direction='in')  
+
+        ax.set_xlim(18.5,27.5)
+        ax.set_ylim(0.5,2000)
+
+        ax.xaxis.set_minor_locator(MultipleLocator(0.5))
+#         x_ax.xaxis.set_minor_locator(MultipleLocator(0.5))
+
+#         ax.yaxis.set_major_formatter(NullFormatter())  
+#         ax.yaxis.set_minor_formatter(NullFormatter())
+        plt.yticks([1,10,100,1000], ('1', '10', '100','1000'))
+
+
+#         plt.setp(y_ax.get_yticklabels(), visible=False)
+        if ii>0:
+            plt.setp(ax.get_yticklabels(), visible=False)
+        else:
+            ax.set_ylabel(r"$n \/\/ (mag^{-1} \/ arcmin^{-2})$", fontsize=14)
+
+        if jj!=1:
+            plt.setp(ax.get_xticklabels(), visible=False)
+        else:
+            ax.set_xlabel(r"magnitude", fontsize=14)
+
+    plt.subplots_adjust(hspace=0, wspace=0)       
+
+    s = "dist = %.2f        GCLF = %.4f       S/N = %.1f"%(header["distance_derived"],
+                                                           header["Cmax"],
+                                                           header["SN_limit"])
+    _ = plt.suptitle(s + "          "+lkn6_name, fontsize=12, y=0.91, x=0.4, color="maroon")
+    
+    return axes
+
+
+
 
 
 ## END

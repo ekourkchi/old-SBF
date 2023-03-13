@@ -1,10 +1,10 @@
 from .utils import *
-
+import copy
 
 
 
 ##############################################################
-def SExtract(model=0, smooth=None, minArea=10, mask=None, thresh=2, \
+def SE_foreground(model=0, smooth=None, minArea=10, mask=None, thresh=2, \
                     good_segments=[0], r_aperture = 100, \
                     renuc=1, **Config
 ):
@@ -185,13 +185,13 @@ def SExtract(model=0, smooth=None, minArea=10, mask=None, thresh=2, \
 
     sex_obj_maskName = root + "/mask_se" + suffix
 
-    return objCatal, df, objName, sex_obj_maskName, sex_obj_masked, residName
+    return objCatal, df, objName, sex_obj_maskName, sex_obj_masked, residName, segment
 
 
 
 ##############################################################
 
-def make_se_lkn(catal_df, model=None, star_f=0.7, r_aperture=0, filter='j', **Config):
+def make_se_lkn(catal_df, model=None, star_f=0.7, r_aperture=0, filter='j', zp = 0, Extended=False, sfx='se', **Config):
 
     name = Config["name"]
     objRoot = Config["objRoot"]
@@ -206,12 +206,13 @@ def make_se_lkn(catal_df, model=None, star_f=0.7, r_aperture=0, filter='j', **Co
     #### ---> Outputs_n0439/n0439_se.lknj
     gal = 0 
     gc = 0
+    nline = 0
 
-    lkn_file_name = objRoot+name+'_se.lkn'+filter
+    lkn_file_name = objRoot+name+'_'+sfx+'_lkn'+filter
 
     if not model is None:
         suffix = ".%03d" % model
-        lkn_file_name = objRoot+'se_lkn'+filter+suffix
+        lkn_file_name = objRoot+name+'_'+sfx+'_lkn'+filter+suffix
 
 
 
@@ -221,15 +222,14 @@ def make_se_lkn(catal_df, model=None, star_f=0.7, r_aperture=0, filter='j', **Co
     Yctr = Y0
     # I already put m1star in the sextractor .inpar files
     #    m1zpt = names[name]['m1star814']
-    m1zpt = 0.0
+    m1zpt = zp
 
     #    test.write('#  0  1         2         3     4      5          6       7       8       9      10      11       12\n')
     #    test.write('#  N  magaut   +/-       m4    +/-   maut_cor   m4cor   star     m5     +/-    m5cor  aut_cor  isoerr\n')
     lkn_file.write('%4s %8.2f %7.2f %8.2f  0 %9.5f %9.5f %9.5f  %5s %7.4f %5s %8.4f %6.4f\n' \
             %('0', Xctr, Yctr, 0, 0,0,0, '0.00', 0, '0', 0, 0))
 
-    xpos_lst = []
-    ypos_lst = []
+    ingore_id_list = []
 
     id = catal_df.NUMBER.values
     xpos = catal_df.X_IMAGE.values - 0.5
@@ -256,14 +256,13 @@ def make_se_lkn(catal_df, model=None, star_f=0.7, r_aperture=0, filter='j', **Co
     m5err = catal_df.MAGERR_APER_5.values
 
 
-
     with open('ds9.reg', 'w') as ds9_file:
         ds9_file.write(header)
 
         if r_aperture > 0:
-            ds9_file.write("circle(%.4f, %.4f, %4f) # color=yellow \n"%(Xctr, Yctr, r_aperture))
+            ds9_file.write("circle(%.4f, %.4f, %4f) # color=red \n"%(Xctr, Yctr, r_aperture))
 
-        for i in range(len(catal_df)):   
+        for i in range(len(id)):   
 
             ignore = False    
 
@@ -296,7 +295,6 @@ def make_se_lkn(catal_df, model=None, star_f=0.7, r_aperture=0, filter='j', **Co
             
             if merr>0.3 or radius[i]<10:
                 ignore = True
-                # continue
 
             # Add a check to remove the bad objects with FWHM=0 that SE sometimes finds 
             # These single pixel object might be bad pixels or cosmic rays
@@ -304,31 +302,32 @@ def make_se_lkn(catal_df, model=None, star_f=0.7, r_aperture=0, filter='j', **Co
             # reduced fwhm limit to 20 pix to avoid huge residual "galaxies" (maybe only needed for Coma)
             
             if fwhm[i]<0.01 or fwhm[i]>10:
-    #                gal = gal - 1
                 ignore = True
-                # continue
 
             if not ignore:
                 if isStar:
                     ds9_file.write("circle(%.4f, %.4f, 3) # color=cyan \n"%(xpos[i]+0.5,ypos[i]+0.5))
                 else:
                     ds9_file.write("ellipse(%.4f, %.4f, %.4f, %.4f, %.4f) # color=green \n"%(xpos[i]+0.5,ypos[i]+0.5,kron[i]*AA[i], kron[i]*BB[i], pa[i]))
+                
+                if (not isStar or not Extended):
+                    if radius[i]!=0:
+                        lkn_file.write('%5s %8.2f %7.2f %8.2f  1 %9.5f %8.5f %9.5f  %5s %7.4f %5s %8.4f %6.4f %6.3f %6.4f\n' \
+                            %(id[i], xpos[i], ypos[i], radius[i], cxx[i], cyy[i], cxy[i], kron[i], AA[i], id[i], mtot, mtoterr, star[i], merr))
+                        nline+=1
+
             else:
                 ds9_file.write("ellipse(%.4f, %.4f, %.4f, %.4f, %.4f) # color=yellow \n"%(xpos[i]+0.5,ypos[i]+0.5,kron[i]*AA[i], kron[i]*BB[i], pa[i]))
-                continue
-                    
-            # just the extended objects
-            if not isStar:
-                lkn_file.write('%5s %8.2f %7.2f %8.2f  1 %9.5f %8.5f %9.5f  %5s %7.4f %5s %8.4f %6.4f %6.3f %6.4f\n' \
-                        %(id[i], xpos[i], ypos[i], radius[i], cxx[i], cyy[i], cxy[i], kron[i], AA[i], id[i], mtot, mtoterr, star[i], merr))
+                ingore_id_list.append(id[i])
 
-            xpos_lst.append(xpos[i])
-            ypos_lst.append(ypos[i])
                 
     lkn_file.close()
 
     print('wrote: ', lkn_file_name)
+    print('number of lines: ', nline)
     print('# of GCs: ', gc)
     print('# of galaxies: ', gal)
     gal=0
     gc=0
+
+    return lkn_file_name, ingore_id_list

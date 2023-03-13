@@ -40,9 +40,10 @@
 * The output format is also changed to make it more intelligible.
 * 
 ***
-      subroutine likenew(fname,n_fname,icolor,secperpixel_,fwhm,
-     $                 distance, kscale, delta_, snlim, 
-     $                 mlim_, mname, n_mname, yessoft, abmags, 
+      subroutine likenew(fname,n_fname,icolor,secperpixel_,
+     $                 fwhm, kscale_,
+     $                 distance, delta_, snlim, mlim_, 
+     $                 mname, n_mname, yessoft, abmags, 
      $                 out_root, n_out_root,
      $                 beta_, cnorm_, cmax_, alpha_, tot_gc,
      $                 gamma_, gnorm, tnorm, tot_gal, galpersec_,
@@ -54,7 +55,7 @@ C      parameter (maxpt=10000, maxvar=3, maxdim=2048, pi=3.14159265)
       parameter (maxhead=1000)
       parameter (maxcolor=9)
       character*1000 fname, mname, outname, out_root
-      integer n_fname, icolor, status, n_mname, n_out_root
+      integer icolor, status, n_out_root
       character colname(0:maxcolor-1)
       real brightcut(0:maxcolor-1), brightcutvega(0:maxcolor-1)
       real r(maxpt), m(maxpt), dm(maxpt), rlim(2), mlim(4), mlim_
@@ -102,9 +103,16 @@ C      data yessoft /.false./
 
       itest = 0
       relike = .false.
-    !   kscale = 1.2
+      kscale = kscale_/10.
+
 
       write(6,*) 'LIKENEW6 -- IR version 2020'
+      write(6,*) 'FWHM:', fwhm
+      write(6,*) "distance:", distance
+      write(6,*) "kscale:", kscale
+      write(6,*) "delta:", delta_
+      write(6,*) "snlim:", snlim
+      write(6,*) "mlim:", mlim_
 
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
@@ -140,17 +148,19 @@ C Now ask for a bitmap file and calculate areas.
          if(yessoft) then
             write(6,*) 'Using soft cutoff bias correction.'
          end if
-
-
+         
+         ind = n_mname
+         
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
       call getdata(nobs,x,y,x0,y0,r,icol,m,dm,rlim,snlim,mlim,
-     $             cxx,cyy,cxy,kron,aa,cstar,fname)
+     $             cxx,cyy,cxy,kron,aa,cstar,fname(:n_fname))
 
       nhead = maxhead
-      call rfits(mname,nhead,header,ibitpix,nx,ny,bsc,bz,bitmap)
+      ind = n_mname
+      call rfits(mname(:ind),nhead,header,ibitpix,nx,ny,bsc,bz,bitmap)
       if(ibitpix.ne.1) then
-         write(6,*) mname(:lnb(mname)), ' is not a bitmap!', ibitpix
+         write(6,*) mname(:ind), ' is not a bitmap!', ibitpix
          status = 1
          return
       end if

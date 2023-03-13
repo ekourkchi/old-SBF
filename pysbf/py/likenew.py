@@ -2,10 +2,14 @@ from ctypes import byref, cdll, c_int, c_char_p, c_double, c_float, c_bool
 from ctypes import POINTER as pt
 import ctypes
 import os, sys
+import numpy as np
 
 
 class LikeNew:
-    def __init__(self, in_folder="", out_folder=""):
+    def __init__(self, in_folder="", out_folder=None):
+
+        if out_folder is None:
+            out_folder = in_folder
 
         mylib = cdll.LoadLibrary(
             os.path.join(os.path.dirname(__file__), "../lib/likenew6.so")
@@ -13,34 +17,34 @@ class LikeNew:
         self.likenew_ = mylib.likenew_
 
         self.likenew_.argtypes = [
-            c_char_p,
-            pt(c_int),
-            pt(c_int),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            c_char_p,
-            pt(c_int),
-            pt(c_bool),
-            pt(c_bool),
-            c_char_p,
-            pt(c_int),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_float),
-            pt(c_int),
+            c_char_p,       # fname
+            pt(c_int),      # n_fname
+            pt(c_int),      # icolor
+            pt(c_float),    # secperpixel
+            pt(c_float),    # fwhm
+            pt(c_int),      # kscale
+            pt(c_float),    # distance
+            pt(c_float),    # delta 
+            pt(c_float),    # snlim
+            pt(c_float),    # mlim
+            c_char_p,       # mname
+            pt(c_int),      # n_mname
+            pt(c_bool),     # yessoft
+            pt(c_bool),     # abmags
+            c_char_p,       # out_root
+            pt(c_int),      # n_out_root
+            pt(c_float),    # beta
+            pt(c_float),    # cnorm 
+            pt(c_float),    # cmax
+            pt(c_float),    # alpha
+            pt(c_float),    # tot_gc
+            pt(c_float),    # gamma
+            pt(c_float),    # gnorm
+            pt(c_float),    # tnorm
+            pt(c_float),    # tot_gal
+            pt(c_float),    # galpersec
+            pt(c_float),    # tysonempersec
+            pt(c_int),      # statua
         ]
 
         self.in_folder = in_folder + '/'
@@ -51,18 +55,20 @@ class LikeNew:
         fname="u12517se.lknj",
         icolor=5,
         secperpixel=0.128,
-        fwhm=1.4,
-        distance=60,
+        fwhm=1.4,    
+        distance=60, #  Mpc
+        gclf_width=1.3,   # magnitude
         kscale=1.2,
-        delta=1.4,
-        snlim=4.5,
-        mlim=22.0,
+        snlim=4.5,   
+        bright_cutoff=21.0,   #   magnitude
         mname="u12517sej.ptm6",
         yessoft=False,
         abmags=True,
         verbose=False,
     ):
-        
+        delta = gclf_width
+        mlim = bright_cutoff
+
         out_root = self.out_folder + fname.rsplit(".", 1)[0]
         fname = self.in_folder + fname
         mname = self.in_folder + mname
@@ -88,14 +94,16 @@ class LikeNew:
         tysonempersec = c_float()
         status = c_int()
 
+        kscale = int(kscale*10)
+
         self.likenew_(
             fname,
             byref(c_int(n_fname)),
             byref(c_int(icolor)),
             byref(c_float(secperpixel)),
             byref(c_float(fwhm)),
+            byref(c_int(kscale)),
             byref(c_float(distance)),
-            byref(c_float(kscale)),
             byref(c_float(delta)),
             byref(c_float(snlim)),
             byref(c_float(mlim)),
