@@ -29,6 +29,7 @@ import pylab, os, sys
 import copy
 
 from .utils import *
+
 ##############################################################
 class SBFobject:
 
@@ -63,7 +64,7 @@ class SBFobject:
 
         if outFolder is None:
             outFolder = "./"
-        
+
         outFolder += "Outputs_" + name + "/"
 
         createDir(outFolder)
@@ -104,7 +105,7 @@ class SBFobject:
             try:
                 self.SExtract()
             except:
-                print("Error: Could not run SExtractor on the file")
+                print("Error: Could not run Source Extractor on the file")
                 fits_file = self.inFolder + "{}/{}j.fits".format(name, name)
                 if not os.path.exists(fits_file):
                     print("Couldn't find " + fits_file)
@@ -148,14 +149,13 @@ class SBFobject:
     def tv(self, fits_file=None, ax=None, options="", additions=""):
 
         if fits_file is None:
-            name = self.name
-            fits_file = "{}j.fits".format(name)
+            fits_file = "{}j.fits".format(self.name)
 
         root = self.objRoot
         jpg_name = root + "tv.jpg"
 
         cwd = os.getcwd()
-        os.chdir(self.inFolder+"/{}".format(name))
+        os.chdir(self.inFolder + "/{}".format(self.name))
 
         ## Monsta script
         script = (
@@ -176,8 +176,7 @@ class SBFobject:
 
         self.run_monsta(script, "./" + "tv.pro", "./" + "tv.log")
 
-        print(os.getcwd())
-        xcmd("cp ./tv.jpg "+os.path.join(cwd,jpg_name), verbose=True)
+        xcmd("cp ./tv.jpg " + os.path.join(cwd, jpg_name), verbose=False)
         os.chdir(cwd)
 
         return self.plot_jpg(jpg_name, ax=ax)
@@ -214,7 +213,7 @@ class SBFobject:
             + STARNNW_NAME
         )
 
-        xcmd(cmd + " > " + root + "sextractor.log", verbose=False)
+        xcmd(cmd + " > " + root + "source_extractor.log", verbose=False)
 
         col_names = self.getColName(catalName)
 
@@ -242,24 +241,26 @@ class SBFobject:
 
         root = self.objRoot
         if mask is None:
-            outMask = root + "/composit.mask"
+            outMask = "composit.mask"
         else:
-            outMask = root + "/mask" + ".%03d" % mask
+            outMask = "mask" + ".%03d" % mask
+
+        cwd = os.getcwd()
+        os.chdir(root)
+
+        xcmd("cp {} ./common.mask".format(self.config + "/common.mask"), verbose=False)
 
         script = """
-        rd 1 """ + self.config + """/common.mask
+        rd 1 common.mask
         """
 
         if maskName is not None:
             if os.path.isfile(maskName):
-                script += (
-                    """
-                rd 2 """
-                    + maskName
-                    + """
+                xcmd("cp {} ./tmp.mask".format(maskName), verbose=False)
+                script += """
+                rd 2 tmp.mask
                 mi 1 2
                 """
-                )
         script += (
             """
         wd 1 """
@@ -273,25 +274,32 @@ class SBFobject:
 
         self.run_monsta(script, root + "obj_inMask.pro", root + "obj_inMask.log")
 
-        return outMask
+        os.chdir(cwd)
+
+        return os.path.join(root, outMask)
 
     def addMasks(self, maskList=None, mask=None):
 
         root = self.objRoot
         if mask is None:
-            outMask = root + "/composit.mask"
+            outMask = "composit.mask"
         else:
-            outMask = root + "/mask" + ".%03d" % mask
+            outMask = "mask" + ".%03d" % mask
+
+        cwd = os.getcwd()
+        os.chdir(root)
+
+        xcmd("cp {} ./common.mask".format(self.config + "/common.mask"), verbose=False)
 
         script = """
-        rd 1 """ + self.config + """/common.mask
+        rd 1 common.mask
         """
 
         if maskList is not None:
 
             for m in maskList:
                 suffix = ".%03d" % m
-                inMask = root + "/mask" + suffix
+                inMask = "./mask" + suffix
                 if os.path.isfile(inMask):
                     script += (
                         """
@@ -316,7 +324,9 @@ class SBFobject:
             script, root + "obj" + suffix + ".pro", root + "obj" + suffix + ".log"
         )
 
-        return outMask
+        os.chdir(cwd)
+
+        return os.path.join(root, outMask)
 
     def outerR(self, c_kron):
         return min(int(c_kron * np.sqrt(self.a * self.b)), self.r_max)
@@ -324,14 +334,22 @@ class SBFobject:
     def maskOpen(self, mask=None, maskFile=None):
         root = self.objRoot
 
+        cwd = os.getcwd()
+        os.chdir(root)
+
         if maskFile is None:
             if mask is None:
-                inMask = self.config + "/common.mask"
+                inMask = "common.mask"
+                xcmd(
+                    "cp {} ./common.mask".format(self.config + "/common.mask"),
+                    verbose=False,
+                )
             else:
                 suffix = ".%03d" % mask
-                inMask = root + "/mask" + suffix
+                inMask = "mask" + suffix
         else:
-            inMask = maskFile
+            xcmd("cp {} ./tmp.mask".format(maskFile), verbose=False)
+            inMask = "tmp.mask"
 
         ## Monsta script
         script = (
@@ -353,6 +371,8 @@ class SBFobject:
 
         image, header = imOpen(inMask + ".fits")
         xcmd("rm " + inMask + ".fits", False)
+
+        os.chdir(cwd)
 
         return image, header
 
@@ -377,22 +397,29 @@ class SBFobject:
         suffix = ".%03d" % model
         name = self.name
 
+        cwd = os.getcwd()
+        os.chdir(root)
+
         if sky is None:
             sky = self.sky_med
 
         if mask is None:
-            maskName = self.config + "/common.mask"
+            xcmd(
+                "cp {} ./common.mask".format(self.config + "/common.mask"),
+                verbose=False,
+            )
+            maskName = "common.mask"
             monsta_masking = """
         cop 3 1 
         """
         elif model_mask is None:
-            maskName = root + "/mask" + ".%03d" % mask
+            maskName = "mask" + ".%03d" % mask
             monsta_masking = """
         cop 3 1 
         """
         else:
-            maskName = root + "/mask" + ".%03d" % mask
-            model_mask = root + "/model" + ".%03d" % model_mask
+            maskName = "mask" + ".%03d" % mask
+            model_mask = "model" + ".%03d" % model_mask
             monsta_masking = (
                 """
         cop 6 2
@@ -419,10 +446,10 @@ class SBFobject:
             else:
                 kosnx = cosnx + "=" + str(k)
 
-        residName = root + "/resid" + suffix
-        modelName = root + "/model" + suffix
-        ellipseFile = root + "/elliprof" + suffix
-        objName = root + "/" + self.name + suffix
+        residName = "resid" + suffix
+        modelName = "model" + suffix
+        ellipseFile = "elliprof" + suffix
+        objName = self.name + suffix
 
         elliprof_cmd = (
             "elliprof 3  model rmstar x0=" + str(self.x0) + " y0=" + str(self.y0)
@@ -442,6 +469,8 @@ class SBFobject:
         elliprof_cmd += " " + options
 
         objFits = self.inFolder + "{}/{}j.fits".format(name, name)
+        xcmd("cp {} ./{}j.fits".format(objFits, name), verbose=False)
+        objFits = "{}j.fits".format(name)
 
         ## Monsta script
         script = (
@@ -501,9 +530,12 @@ class SBFobject:
         Monsta_pro = root + "monsta" + suffix + ".pro"
         Monsta_log = root + "monsta" + suffix + ".log"
 
-        # print(Monsta_pro, Monsta_log)
+        monsta_output = self.run_monsta(
+            script, Monsta_pro, Monsta_log, silent=monsta_silent
+        )
+        os.chdir(cwd)
 
-        return self.run_monsta(script, Monsta_pro, Monsta_log, silent=monsta_silent)
+        return monsta_output
 
     def objSExtract(
         self, model=0, smooth=None, minArea=10, thresh=2, mask=None, renuc=1
@@ -517,17 +549,24 @@ class SBFobject:
         else:
             suffix_mask = ".%03d" % mask
 
-        residName = root + "/resid" + suffix
-        modelName = root + "/model" + suffix
-        segment = root + "/objCheck" + suffix + ".segment"
-        objName = root + "/objCheck" + suffix
-        objCatal = root + "/objCatal" + suffix
-        maskName = root + "/mask" + suffix_mask
-        model_mask = root + "/mask" + ".%03d" % model
-        tmp = root + "/tmp"
+        cwd = os.getcwd()
+        os.chdir(root)
+
+        residName = "resid" + suffix
+        modelName = "model" + suffix
+        segment = "objCheck" + suffix + ".segment"
+        objName = "objCheck" + suffix
+        objCatal = "objCatal" + suffix
+        maskName = "mask" + suffix_mask
+        model_mask = "mask" + ".%03d" % model
+        tmp = "tmp"
 
         name = self.name
+
         objFits = self.inFolder + "{}/{}j.fits".format(name, name)
+        xcmd("cp {} ./{}j.fits".format(objFits, name), verbose=False)
+        objFits = "{}j.fits".format(name)
+
         script = (
             """
         rd 1 '"""
@@ -626,10 +665,12 @@ class SBFobject:
 
         # print(sex_cmd)
 
-        xcmd(sex_cmd + " > " + root + "sextractor.log", verbose=False)
+        xcmd(sex_cmd + " > " + root + "source_extractor.log", verbose=False)
         seg2mask(segment, objName)
 
         # print(segment, objName, maskName)
+
+        xcmd("cp {} ./common.mask".format(self.config + "/common.mask"), verbose=False)
 
         ## Monsta script
         script = (
@@ -637,7 +678,7 @@ class SBFobject:
         rd 1 """
             + objName
             + """
-        rd 5 """ + self.config + """/common.mask
+        rd 5 common.mask
         mi 1 5
         wd 1 """
             + maskName
@@ -651,16 +692,27 @@ class SBFobject:
         )
         # print(root+'obj'+suffix+'.pro', root+'obj'+suffix+'.log')
 
-        self.run_monsta(
+        monsta_output = self.run_monsta(
             script, root + "obj" + suffix + ".pro", root + "obj" + suffix + ".log"
         )
+
+        os.chdir(cwd)
+        return monsta_output
 
     def naive_Sextract(self, minArea=10, thresh=2, mask=None, smooth=None):
 
         name = self.name
         root = self.objRoot
-        fits_name = self.inFolder + "{}/{}j.fits".format(name, name)
-        odj_common = root + "/tmp"
+
+        cwd = os.getcwd()
+        os.chdir(root)
+
+        xcmd("cp {} ./common.mask".format(self.config + "/common.mask"), verbose=False)
+        objFits = self.inFolder + "{}/{}j.fits".format(name, name)
+        xcmd("cp {} ./{}j.fits".format(objFits, name), verbose=False)
+        fits_name = "{}j.fits".format(name)
+
+        odj_common = "tmp"
 
         if smooth is not None:
             script = (
@@ -681,6 +733,7 @@ class SBFobject:
             fits_name = odj_common
             self.run_monsta(script, root + "obj.pro", root + "obj.log")
 
+        model = 0
         if mask is None:
             suffix_mask = ".%03d" % model
         else:
@@ -693,7 +746,7 @@ class SBFobject:
         rd 1 """
             + fits_name
             + """
-        rd 2 """ + self.config + """/common.mask
+        rd 2 common.mask
         mi 1 2
         wd 1 """
             + odj_common
@@ -719,7 +772,7 @@ class SBFobject:
             + ' -CHECKIMAGE_TYPE "SEGMENTATION" -CHECKIMAGE_NAME '
         )
         cmd += maskName
-        cmd += " -CATALOG_NAME  " + root + "/naiive_sextract_wfc3j.cat" 
+        cmd += " -CATALOG_NAME  " + root + "/naiive_sextract_wfc3j.cat"
         cmd += (
             " -PARAMETERS_NAME "
             + PARAMETERS_NAME
@@ -729,7 +782,7 @@ class SBFobject:
             + STARNNW_NAME
         )
 
-        xcmd(cmd + " > " + root + "sextractor.log", verbose=False)
+        xcmd(cmd + " > " + "sextractor.log", verbose=False)
 
         im, header = imOpen(maskName)
         x0 = int(np.round(self.x0))
@@ -742,6 +795,8 @@ class SBFobject:
 
         mask2 = seg2mask(maskName, maskName, seg_num=im[x0, y0])
         im, _ = imOpen(odj_common)
+
+        os.chdir(cwd)
 
         return ax1, ax2, ax3, ax4
 
@@ -764,7 +819,9 @@ class SBFobject:
         rd 1 """
             + fits_name
             + """
-        rd 2 """ + self.config + """/common.mask
+        rd 2 """
+            + self.config
+            + """/common.mask
         mi 1 2
         wd 1 """
             + odj_common
@@ -776,7 +833,7 @@ class SBFobject:
         self.run_monsta(script, root + "obj.pro", root + "obj.log")
 
         cmd = "sex -c " + sex_config + " " + odj_common
-        cmd += " -CATALOG_NAME  " + root + "/background_wfc3j.cat" 
+        cmd += " -CATALOG_NAME  " + root + "/background_wfc3j.cat"
         cmd += (
             " -BACK_SIZE 500 -DETECT_MINAREA 4 -DETECT_THRESH "
             + str(thresh)
@@ -1105,7 +1162,7 @@ class SBFobject:
         return [my_widget]
 
     #########################################################
-    def slider_naive_sex(self):
+    def slider_naive_extractor(self):
 
         main_key = "naiveSextract"
 
@@ -1151,7 +1208,7 @@ class SBFobject:
         return s
 
     #########################################################
-    def plot_naivesex(self, pngName=None):
+    def plot_naives_source_extract(self, pngName=None):
 
         main_key = "naiveSextract"
 
@@ -1538,7 +1595,9 @@ class SBFobject:
                     rd 1 """
                     + objName
                     + """
-                    rd 5 """ + self.config + """/common.mask
+                    rd 5 """
+                    + self.config
+                    + """/common.mask
                     mi 1 5
                     wd 1 """
                     + maskName
@@ -1936,11 +1995,11 @@ class SBFobject:
         df.at["back_mask", key] = "background mask [fits]"
         df.at["ellipseFile", key] = "ellipse file [text]"
 
-        df.at["BXT", key] = "backSextract::threshold"
+        df.at["BXT", key] = "backSourceExtract::threshold"
 
-        df.at["NXM", key] = "naiveSextract::minarea"
-        df.at["NXT", key] = "naiveSextract::threshold"
-        df.at["NXS", key] = "naiveSextract::smooth"
+        df.at["NXM", key] = "naiveSourceExtract::minarea"
+        df.at["NXT", key] = "naiveSourceExtract::threshold"
+        df.at["NXS", key] = "naiveSourceExtract::smooth"
 
         df.at["BER", key] = "basic_elliprof::r0"
         df.at["BEC", key] = "basic_elliprof::c_kron"
