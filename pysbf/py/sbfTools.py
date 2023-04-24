@@ -1719,7 +1719,7 @@ class SBFobject:
 
     #########################################################
     #########################################################
-    def plot_profile(self, sky_factor, r0, r1, nr, options="", mask=1, model_mask=0):
+    def plot_profile(self, sky_factor, r0, r1, nr, options="", mask=1, model_mask=0, fit_imits=[70,90]):
 
         # using final mask = 1 --> model 0
         self.elliprof(
@@ -1751,11 +1751,14 @@ class SBFobject:
         ax.set_xlabel(r"$r^{1/4}$" + " [pixel]", fontsize=16)
         ax.set_ylabel(r"surface brightness" + " [mag]", fontsize=16)
 
+        range_0 = fit_imits[0]/100
+        range_1 = 1. - fit_imits[1]/100
+
         maxX = np.max(x)
         minX = np.min(x)
         dx = maxX - minX
-        x1 = 0.70 * dx + minX
-        x2 = maxX - 0.10 * dx
+        x1 = range_0 * dx + minX
+        x2 = maxX - range_1 * dx
         x0 = x[((x < x2) & (x > x1))]
         y0 = y[((x < x2) & (x > x1))]
         ax.plot(x0, y0, "ko", mfc="none")
