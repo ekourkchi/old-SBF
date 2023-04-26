@@ -537,7 +537,7 @@ class SBFobject:
 
         return monsta_output
 
-    def objSExtract(
+    def objSourceExtract(
         self, model=0, smooth=None, minArea=10, thresh=2, mask=None, renuc=1
     ):
 
@@ -1510,7 +1510,7 @@ class SBFobject:
         )
 
         # using residuals of model 0 --> mask 2
-        self.objSExtract(
+        self.objSourceExtract(
             model=0,
             smooth=smooth,
             minArea=minarea,
@@ -2056,5 +2056,126 @@ class SBFobject:
 
         return df
 
+
+    def insert_existing_profile(self, profile=None, sky=None):
+
+        model = 0 
+
+        root = self.objRoot
+        suffix = ".%03d" % model
+        name = self.name
+
+        if sky is None:
+            sky = self.sky_med
+
+        cwd = os.getcwd()
+        os.chdir(root)
+
+        # imorting common.mask
+        xcmd(
+            "cp {} ./common.mask".format(self.config + "/common.mask"),
+            verbose=False,
+        )
+        Cmask = "common.mask"
+        
+        Dmask = self.inFolder + "{}/{}j.dmask".format(self.name, self.name)
+
+        # buidling mask1
+        self.inputMaks(Cmask, mask=1)
+        if os.path.exists(Dmask):
+            self.inputMaks(Dmask, mask=0)
+            self.addMasks(maskList=[0, 1], mask=1)
+
+        mask = 1
+        maskName = "mask" + ".%03d" % mask
+
+        fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(16, 5))
+
+        ## Calculating the number of crossing ellipses, the generated model = 0, from previous linen_cross = Xellipses(obj.list_ellipses(model=0))
+        self.tv(options="log", ax=ax1)
+        ax1.set_title(self.name, fontsize=14)
+
+
+        im, h = self.maskOpen(mask=1)
+        ax2.imshow(np.flipud(im))
+        ax2.set_title("Mask 1", fontsize=14)
+
+        # build model 0
+        if profile is None:
+            PRF = self.inFolder + "{}/{}j.prf".format(self.name, self.name)
+        else:
+            PRF = profile
+        model = 0
+        modelName = "model" + ".%03d" % model
+        residName = "resid" + ".%03d" % model
+        if os.path.exists(PRF):
+            xcmd(
+            "cp {} {}".format(PRF, modelName),
+            verbose=False,)
+        else:
+            raise Exception("Profile ({}) does not exist !".format(PRF))
+        
+        self.tv_model(model=0, ax=ax3, options="sqrt")
+        ax3.set_title("Profile", fontsize=14)
+
+
+        objFits = self.inFolder + "{}/{}j.fits".format(name, name)
+        xcmd("cp {} ./{}j.fits".format(objFits, name), verbose=False)
+        objFits = "{}j.fits".format(name)
+
+
+        ## Monsta script
+        script = (
+            """
+        string name '"""
+            + self.name
+            + """'
+        rd 1 '"""
+            + objFits
+            + """'
+        sc 1 """
+            + str(sky)
+            + """                            ! sky subtraction
+        rd 3 """+modelName+"""
+        si 1 3                               ! object - model
+        rd 2 """
+            + maskName
+            + """
+        mi 1 2                                ! multiply by mask
+        wd 1 """
+            + residName
+            + """
+        tv 1 JPEG="""
+            + residName
+            + """.jpg
+        q
+        
+        """
+        )
+
+        self.run_monsta(script, root + "monsta.pro", root + "monsta.log")
+
+        self.tv_resid(model=0, ax=ax4, options="sqrt")
+        ax4.set_title("Residual", fontsize=14)
+
+
+        # self.tv_resid(model=0, ax=ax3, options="sqrt")
+        # ax3.set_title("Residual", fontsize=14)
+
+        # if pngName is None:
+        #     pngName = self.objRoot + "/" + self.name + "_basic_model.png"
+        # else:
+        #     pngName = self.objRoot + "/" + pngName
+
+        # plt.savefig(pngName)
+        # print("fig. name: ", pngName)
+
+
+
+        os.chdir(cwd)
+
+        return (ax1, ax2, ax3, ax4)
+
+        
 
 #########################################################
