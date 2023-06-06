@@ -640,7 +640,7 @@ class SBFobject:
         sex_cmd = (
             """sex """
             + residName
-            + """ -c w"""
+            + """ -c """
             + sex_config
             + """ -CHECKIMAGE_NAME """
             + segment
