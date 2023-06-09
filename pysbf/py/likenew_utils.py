@@ -6,6 +6,7 @@ from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 from matplotlib.ticker import NullFormatter
 
 from .utils import *
+from .likenew import *
 
 def eq(lw):
     if "=" in lw:
@@ -267,8 +268,49 @@ def likenew_plot(lkn6_name, header, tables, radii):
     
     return axes
 
-
-
-
-
 ## END
+
+########################################################################################
+
+def pylike(like_pack, gclf_width=1.4, 
+            distance=60, 
+            bright_cutoff=20.5, 
+            kscale=1.2,
+            plot = False,
+            **Config):
+    
+    name = Config["name"]
+    inFolder = Config["inFolder"]
+    objRoot = Config["objRoot"]
+    lkn, lkn6, ptm6, resid = like_pack
+    
+    cwd = os.getcwd()
+    xcmd("cp {}/{}/{}j.dmask {}.".format(inFolder, name, name, objRoot), verbose=True)
+    os.chdir(objRoot)
+    likenew = LikeNew(in_folder='./')
+    likenew.run(gclf_width=gclf_width, 
+                distance=distance, 
+                bright_cutoff=bright_cutoff, 
+                kscale=kscale,
+                fname=lkn,
+                mname="{}j.dmask".format(name),    # initial mask
+                verbose=True
+               )
+    os.chdir(cwd)
+    
+    if plot:
+        lkn6_name = os.path.join(objRoot, lkn6)
+        header, tables, radii = read_lkn6(lkn6_name)
+        _ = likenew_plot(lkn6_name, header, tables, radii)
+
+
+########################################################################################
+
+########################################################################################
+########################################################################################
+########################################################################################
+
+########################################################################################
+########################################################################################
+
+

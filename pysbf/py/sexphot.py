@@ -331,3 +331,110 @@ def make_se_lkn(catal_df, model=None, star_f=0.7, r_aperture=0, filter='j', zp =
     gc=0
 
     return lkn_file_name, ingore_id_list
+
+
+##############################################################
+
+def edit_ptm6_mask(like_pack, rad=5, self=False, **Config):
+    
+    objRoot = Config["objRoot"]
+    lkn, lkn6, ptm6, resid = like_pack
+    
+    if self:
+        infile = "{}b".format(ptm6)
+    else:
+        infile = ptm6
+    
+    cwd = os.getcwd()
+    os.chdir(objRoot)
+    
+    if not os.path.exists(infile):
+        xcmd("cp {} {}".format(ptm6, infile), verbose=True)
+    
+    
+    monsta_script = """
+        rd 1 """+resid+"""
+        rd 2 '"""+infile+"""
+        mi 2 1 
+        tv 2 -1000 1000
+        tidy 2 defer rad="""+str(rad)+"""
+        di 2 2 
+        wd 2 """+ptm6+"""b bitmap
+    """
+    run_monsta(monsta_script, 'monsta.pro', 'monsta.log')
+    now = datetime.now().strftime("%Y%m%d%H%M%S")
+    xcmd("cp {}b {}b.{}".format(ptm6, ptm6, now), verbose=False)
+    print("modified mask name: {}b".format(ptm6))
+    print("backup: {}b.{}".format(ptm6, now))
+    os.chdir(cwd)
+    
+    return "{}b".format(ptm6)
+
+##############################################################
+def resid_ptm6(resid, all_masks, outfile=None, **Config):
+
+    objRoot = Config["objRoot"]
+    name = Config["name"]
+    
+    if outfile is None:
+        outfile = "{}_resid_masked".format(name)
+        
+    cwd = os.getcwd()
+    os.chdir(objRoot)
+    monsta_script = """
+        rd 1 """+resid
+    
+    
+    for mask in all_masks:
+        monsta_script+="""
+        rd 2 """+mask+"""
+        mi 1 2
+        """
+        
+        
+    monsta_script += """wd 1 """+outfile
+
+    run_monsta(monsta_script, 'monsta.pro', 'monsta.log')
+    print("residual file ready for dophot: ", outfile)
+    os.chdir(cwd)
+    
+    return outfile
+##############################################################
+def display_ptm6_mask(like_pack, **Config):
+    
+    objRoot = Config["objRoot"]
+    lkn, lkn6, ptm6, resid = like_pack
+    
+    cwd = os.getcwd()
+    os.chdir(objRoot)
+    monsta_script = """
+        rd 1 """+resid+"""
+        rd 2 '"""+ptm6+"""
+        mi 2 1 
+        rd 3 '"""+ptm6+"""b
+        mi 3 1
+        tv 1 -1000 1000
+        tv 2 -1000 1000
+        tv 3 -1000 1000
+        tidy 1 defer rad=5
+    """
+    run_monsta(monsta_script, 'monsta.pro', 'monsta.log')
+    os.chdir(cwd)
+##############################################################
+def ds9_scale_image(reg_file='./ds9.reg'):
+    
+    os.system("xpaset -p ds9 regions delete all &")
+    os.system("xpaset -p ds9 regions "+reg_file+" &")
+
+    # http://ds9.si.edu/doc/ref/xpa.html
+    os.system("xpaset -p ds9 regions "+reg_file+" &")
+    os.system("xpaset -p ds9 cmap value 7.9 0.47 &")
+
+    # set image scale
+    os.system("xpaset -p ds9 scale log &")
+    os.system("xpaset -p ds9 scale limits -4100 200000 &")
+##############################################################
+##############################################################
+##############################################################
+##############################################################
+##############################################################
