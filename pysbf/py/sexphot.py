@@ -88,7 +88,7 @@ def SE_foreground(model=0, smooth=None, minArea=10, mask=None, thresh=2, \
     sex_cmd = (
         """sex """
         + sex_obj_maskName   # residual image
-        + """ -c w"""
+        + """ -c """
         + sex_configFolder
         + """ -CHECKIMAGE_NAME """
         + segment   ### "./back.fits"
