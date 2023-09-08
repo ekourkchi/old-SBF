@@ -37,59 +37,61 @@ class MissingGalaxyCenter(Exception):
 ##############################################################
 def get_sex_catal_ColName(catalName):
 
-        with open(catalName, 'r') as f:
+    with open(catalName, "r") as f:
 
-            lines = f.readlines()
+        lines = f.readlines()
 
-        cols = {}
-        i = 0 
-        while lines[i].split()[0]=="#":
-            j = int(lines[i].split()[1])
-            name = lines[i].split()[2]
-            
-            n = 1
-            cols[i] = [j, name, n]
-            
-            if i>0:
-                n = cols[i][0]-cols[i-1][0]
-                cols[i-1][2] = n
-          
-            i+=1
-        
-        col_names = []
-        n_head = i
-        for m in range(i):
-            s = cols[m][2]
-            name = cols[m][1]
-            if s==1:
-                col_names.append(name)
-            else:
-                for p in range(s):
-                    col_names.append(name+'_'+str(p+1))
-                            
-        return n_head, col_names
+    cols = {}
+    i = 0
+    while lines[i].split()[0] == "#":
+        j = int(lines[i].split()[1])
+        name = lines[i].split()[2]
+
+        n = 1
+        cols[i] = [j, name, n]
+
+        if i > 0:
+            n = cols[i][0] - cols[i - 1][0]
+            cols[i - 1][2] = n
+
+        i += 1
+
+    col_names = []
+    n_head = i
+    for m in range(i):
+        s = cols[m][2]
+        name = cols[m][1]
+        if s == 1:
+            col_names.append(name)
+        else:
+            for p in range(s):
+                col_names.append(name + "_" + str(p + 1))
+
+    return n_head, col_names
+
 
 ##############################################################
 def get_sextract_catal_df(catalName):
 
     n_head, col_names = get_sex_catal_ColName(catalName)
-    catal_df = pd.read_csv(catalName, delimiter=r"\s+", skiprows=n_head, 
-                            header = None, names = col_names)
+    catal_df = pd.read_csv(
+        catalName, delimiter=r"\s+", skiprows=n_head, header=None, names=col_names
+    )
 
     return catal_df
 
 
 ##############################################################
-def tv(fits_name, xlim=[0,1], ylim=[0,1], ax=None, options="", zoom=1., **kwarg):
+def tv(fits_name, xlim=[0, 1], ylim=[0, 1], ax=None, options="", zoom=1.0, **kwarg):
 
-    size = 1./zoom
+    size = 1.0 / zoom
 
     img = get_img(fits_name, options=options)
-    
+
     x_max, y_max, _ = img.shape
 
-    xlim = [int(x_max*l) for l in xlim]
-    ylim = [int(y_max*l) for l in ylim]
+    xlim = [int(x_max * l) for l in xlim]
+    ylim = [int(y_max * l) for l in ylim]
 
     if "XY" in kwarg:
 
@@ -98,17 +100,17 @@ def tv(fits_name, xlim=[0,1], ylim=[0,1], ax=None, options="", zoom=1., **kwarg)
             X0 = int(XY[0])
             Y0 = int(XY[1])
 
-            x0 = np.max([X0 - int(size * x_max) , 0])
-            x1 = np.min([X0 + int(size * x_max) , x_max])
-            y0 = np.max([Y0 - int(size * y_max) , 0])
-            y1 = np.min([Y0 + int(size * y_max) , y_max])
+            x0 = np.max([X0 - int(size * x_max), 0])
+            x1 = np.min([X0 + int(size * x_max), x_max])
+            y0 = np.max([Y0 - int(size * y_max), 0])
+            y1 = np.min([Y0 + int(size * y_max), y_max])
 
             xlim = [x0, x1]
             ylim = [y0, y1]
         except:
             print("Enter the galaxy center !")
-            pass        
-        
+            pass
+
     if ax is None:
         plt.figure(figsize=(10, 10))
         plt.subplot(111)
@@ -118,32 +120,46 @@ def tv(fits_name, xlim=[0,1], ylim=[0,1], ax=None, options="", zoom=1., **kwarg)
     ax.set_ylim(ylim)
 
     imgplot = ax.imshow(np.flipud(img))
-    
+
     return ax
+
+
 ##############################################################
+
 
 def get_img(fits_file, ax=None, options=""):
 
-    jpg_name = 'tv.jpg'
+    jpg_name = "tv.jpg"
 
     ## Monsta script
-    script = """
-    rd 1 '"""+fits_file+"""'
-    tv 1 """+options+""" JPEG="""+jpg_name+"""
+    script = (
+        """
+    rd 1 '"""
+        + fits_file
+        + """'
+    tv 1 """
+        + options
+        + """ JPEG="""
+        + jpg_name
+        + """
     q
 
     """
+    )
 
-    run_monsta(script, 'tv.pro', 'tv.log')
-    
+    run_monsta(script, "tv.pro", "tv.log")
+
     xcmd("rm tv.pro & rm tv.log &", verbose=False)
-    
+
     img = mpimg.imread(jpg_name)
 
     xcmd("rm tv.jpg &", verbose=False)
-    
+
     return img
+
+
 ##############################################################
+
 
 def run_monsta(script, Monsta_pro, Monsta_log, monsta="monsta", silent=False):
 
@@ -173,8 +189,8 @@ def run_monsta(script, Monsta_pro, Monsta_log, monsta="monsta", silent=False):
         return "OK"
 
 
-
 ##############################################################
+
 
 def get_extinction(ra, dec):
     URL = (
@@ -590,6 +606,7 @@ def plot_E(df, ax=None, **kwargs):
 
 ##############################################################
 
+
 def imOpen(inFits):
 
     hdu_list = fits.open(inFits)
@@ -602,8 +619,15 @@ def imOpen(inFits):
 ##############################################################
 
 
-def seg2mask(inFits, outMask, overwrite=True, seg_num=0, good_segments=[0], 
-            object_mask=False, invert=False):
+def seg2mask(
+    inFits,
+    outMask,
+    overwrite=True,
+    seg_num=0,
+    good_segments=[0],
+    object_mask=False,
+    invert=False,
+):
 
     imarray, header = imOpen(inFits)
 
@@ -620,7 +644,7 @@ def seg2mask(inFits, outMask, overwrite=True, seg_num=0, good_segments=[0],
         imarray[imarray == -1] = 1  # good pixel
     else:
         imarray[(imarray != -1)] = 1  # masked
-        imarray[imarray == -1] = 0  # good pixel        
+        imarray[imarray == -1] = 0  # good pixel
 
     fits.writeto(outMask, np.float32(imarray), header, overwrite=overwrite)
 
@@ -681,25 +705,27 @@ def Xellipses(ells):
 def open_log_df(logName):
 
     if not exists(logName):
-        print("There is no log-file. \nPlease run elliprof to generate the log file and the relevant plots.")
-        print("Elliprof notebook name: \"Run_elliprof_function.ipynb\"")
+        print(
+            "There is no log-file. \nPlease run elliprof to generate the log file and the relevant plots."
+        )
+        print('Elliprof notebook name: "Run_elliprof_function.ipynb"')
         return None
 
     with open(logName, "r") as f:
         lines = f.readlines()
 
     r = logName.rsplit("/", 1)[0]
-    if r==logName:
+    if r == logName:
         R = "./"
     else:
-        R = r + '/'
+        R = r + "/"
 
-    if exists(R+"log.tmp"):
+    if exists(R + "log.tmp"):
         # print("backing up log.temp")
-        xcmd("cp "+R+"log.tmp "+R+"log.tmp.back", verbose=False)
-        xcmd("rm "+R+"log.tmp", verbose=False)
+        xcmd("cp " + R + "log.tmp " + R + "log.tmp.back", verbose=False)
+        xcmd("rm " + R + "log.tmp", verbose=False)
 
-    with open(R+"log.tmp", "w") as f:
+    with open(R + "log.tmp", "w") as f:
 
         First = True
         for l in lines:
@@ -712,7 +738,7 @@ def open_log_df(logName):
             else:
                 f.write(l)
 
-    df = pd.read_csv(R+"log.tmp")
+    df = pd.read_csv(R + "log.tmp")
     for col in df.columns:
         df = df.rename(columns={col: col.strip()})
 
@@ -760,6 +786,7 @@ def get_obj_params(df):
     params[main_key]["renuc"] = np.float(df.loc["SEN"].value.strip())
 
     return params
+
 
 #########################################################
 ## `get_RMS`
@@ -826,6 +853,7 @@ def get_RMS(obj, r0, r1, nr, sky_factor, options=""):
 
 #########################################################
 
+
 def get_f(obj, r0, r1, nr, options=""):
     """
 
@@ -852,6 +880,7 @@ def get_f(obj, r0, r1, nr, options=""):
 
 #########################################################
 
+
 def populate_dict(objDict, inDict):
 
     if objDict is None:
@@ -862,126 +891,141 @@ def populate_dict(objDict, inDict):
 
     return objDict
 
+
 ####################################### Set Axes
-def set_axes(ax, xlim=None, ylim=None, fontsize=16, twinx=True, twiny=True, minor=True, inout='in'):
-        
-        if not ylim is None:
-            ax.set_ylim(ylim)
-        else:
-            ylim = ax.get_ylim() 
-            
-        if not xlim is None:    
-            ax.set_xlim(xlim) 
-        else:
-            xlim = ax.get_xlim()
-            
-        ax.tick_params(which='major', length=8, width=1., direction=inout)
-#         if minor:
-        ax.tick_params(which='minor', length=4, color='#000033', width=1.2, direction=inout)  
-        
-        if twiny:
-            y_ax = ax.twinx()
-            y_ax.set_ylim(ylim)
-            y_ax.set_yticklabels([])
-            y_ax.minorticks_on()
-            y_ax.tick_params(which='major', length=8, width=1., direction=inout)
-            if minor:
-                y_ax.tick_params(which='minor', length=4, color='#000033', width=1.2, direction=inout) 
-        
-        if twinx:
-            x_ax = ax.twiny()
-            x_ax.set_xlim(xlim)
-            x_ax.set_xticklabels([])
-            x_ax.minorticks_on()
-            x_ax.tick_params(which='major', length=8, width=1.2, direction=inout)
-            if minor:
-                x_ax.tick_params(which='minor', length=4, color='#000033', width=1.2, direction=inout)  
-                
-        ax.xaxis.set_tick_params(labelsize=16)
-        ax.yaxis.set_tick_params(labelsize=16)
+def set_axes(
+    ax,
+    xlim=None,
+    ylim=None,
+    fontsize=16,
+    twinx=True,
+    twiny=True,
+    minor=True,
+    inout="in",
+):
+
+    if not ylim is None:
+        ax.set_ylim(ylim)
+    else:
+        ylim = ax.get_ylim()
+
+    if not xlim is None:
+        ax.set_xlim(xlim)
+    else:
+        xlim = ax.get_xlim()
+
+    ax.tick_params(which="major", length=8, width=1.0, direction=inout)
+    #         if minor:
+    ax.tick_params(which="minor", length=4, color="#000033", width=1.2, direction=inout)
+
+    if twiny:
+        y_ax = ax.twinx()
+        y_ax.set_ylim(ylim)
+        y_ax.set_yticklabels([])
+        y_ax.minorticks_on()
+        y_ax.tick_params(which="major", length=8, width=1.0, direction=inout)
+        if minor:
+            y_ax.tick_params(
+                which="minor", length=4, color="#000033", width=1.2, direction=inout
+            )
+
+    if twinx:
+        x_ax = ax.twiny()
+        x_ax.set_xlim(xlim)
+        x_ax.set_xticklabels([])
+        x_ax.minorticks_on()
+        x_ax.tick_params(which="major", length=8, width=1.2, direction=inout)
+        if minor:
+            x_ax.tick_params(
+                which="minor", length=4, color="#000033", width=1.2, direction=inout
+            )
+
+    ax.xaxis.set_tick_params(labelsize=fontsize)
+    ax.yaxis.set_tick_params(labelsize=fontsize)
+
+    return x_ax, y_ax
 
 
-        return x_ax, y_ax
-
-####################################### 
+#######################################
 class Logtext:
-    
-    def __init__(self, text_file, label):
-        
+    def __init__(
+        self, text_file, label, width="900px", height="400px", overflow="scroll"
+    ):
+
         with open(text_file, "r") as f:
             dparfile = f.readlines()
         self.text = "".join(dparfile)
-        self.label = label        
-        self.button = widgets.Button(description='Open {} ...'.format(label))
+        self.label = label
+        self.button = widgets.Button(description="Open {} ...".format(label))
         self.button.on_click(self.clicked)
         self.text_wgt = widgets.Textarea(
-                                    value='',
-                                    placeholder='Paste ticket description here!',
-                                    description=label+' : ' + text_file,
-                                    disabled=False,
-                                    style={'description_width': 'initial'},
-                                    layout = widgets.Layout(width='800px', height='300px')
-                                    )
+            value="",
+            placeholder="Paste ticket description here!",
+            description=label + " : " + text_file,
+            disabled=False,
+            style={"description_width": "initial"},
+            layout=widgets.Layout(width=width, height=height, overflow=overflow),
+        )
         self.text_wgt.value = self.text
-        self.text_wgt.layout.display = 'none'
+        self.text_wgt.layout.display = "none"
         self.status = False
         self.widgets = [self.text_wgt, self.button]
-        self.box = widgets.HBox(self.widgets)        
+        self.box = widgets.HBox(self.widgets)
         self.display()
-    
+
     def display(self):
-        display(self.box) 
-        
+        display(self.box)
+
     def clicked(self, _):
         self.on_off()
 
     def on_off(self):
         if self.status:
-            self.text_wgt.layout.display = 'none'
+            self.text_wgt.layout.display = "none"
             self.status = False
-            self.button.description = 'Open {} ...'.format(self.label)
+            self.button.description = "Open {} ...".format(self.label)
         else:
-            self.text_wgt.layout.display = 'block' 
+            self.text_wgt.layout.display = "block"
             self.status = True
-            self.button.description = 'Close ...'
+            self.button.description = "Close ..."
 
-####################################### 
+
+#######################################
 class CMD_button:
-    
     def __init__(self, command, label):
-                    
+
         self.command = command
         self.button = widgets.Button(description=label)
         self.button.on_click(self.clicked)
-        
+
         display(widgets.VBox([self.button]))
-        
+
     def clicked(self, _):
         self.run_command()
 
     def run_command(self):
         os.system(self.command)
 
+
 #######################################
 class ds9_region_display:
-    
     def __init__(self, reg_file="./ds9.reg"):
-                    
+
         self.status = True
         self.reg_file = reg_file
-        self.button = widgets.Button(description='Regions On/Off')
+        self.button = widgets.Button(description="Regions On/Off")
         self.button.on_click(self.clicked)
         os.system("xpaset -p ds9 regions delete all")
-        os.system("xpaset -p ds9 regions "+reg_file+" &")
+        os.system("xpaset -p ds9 regions " + reg_file + " &")
         display(widgets.VBox([self.button]))
-        
+
     def clicked(self, _):
         self.on_off()
 
     def on_off(self):
         if self.status:
             os.system("xpaset -p ds9 regions delete all")
-            self.status=False
+            self.status = False
         else:
-            os.system("xpaset -p ds9 regions "+self.reg_file+" &")
-            self.status=True  
+            os.system("xpaset -p ds9 regions " + self.reg_file + " &")
+            self.status = True

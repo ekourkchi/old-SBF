@@ -1719,7 +1719,17 @@ class SBFobject:
 
     #########################################################
     #########################################################
-    def plot_profile(self, sky_factor, r0, r1, nr, options="", mask=1, model_mask=0, fit_imits=[70,90]):
+    def plot_profile(
+        self,
+        sky_factor,
+        r0,
+        r1,
+        nr,
+        options="",
+        mask=1,
+        model_mask=0,
+        fit_imits=[70, 90],
+    ):
 
         # using final mask = 1 --> model 0
         self.elliprof(
@@ -1751,8 +1761,8 @@ class SBFobject:
         ax.set_xlabel(r"$r^{1/4}$" + " [pixel]", fontsize=16)
         ax.set_ylabel(r"surface brightness" + " [mag]", fontsize=16)
 
-        range_0 = fit_imits[0]/100
-        range_1 = 1. - fit_imits[1]/100
+        range_0 = fit_imits[0] / 100
+        range_1 = 1.0 - fit_imits[1] / 100
 
         maxX = np.max(x)
         minX = np.min(x)
@@ -2056,10 +2066,9 @@ class SBFobject:
 
         return df
 
-
     def insert_existing_profile(self, profile=None, sky=None):
 
-        model = 0 
+        model = 0
 
         root = self.objRoot
         suffix = ".%03d" % model
@@ -2077,7 +2086,7 @@ class SBFobject:
             verbose=False,
         )
         Cmask = "common.mask"
-        
+
         Dmask = self.inFolder + "{}/{}j.dmask".format(self.name, self.name)
 
         # buidling mask1
@@ -2095,7 +2104,6 @@ class SBFobject:
         self.tv(options="log", ax=ax1)
         ax1.set_title(self.name, fontsize=14)
 
-
         im, h = self.maskOpen(mask=1)
         ax2.imshow(np.flipud(im))
         ax2.set_title("Mask 1", fontsize=14)
@@ -2110,19 +2118,18 @@ class SBFobject:
         residName = "resid" + ".%03d" % model
         if os.path.exists(PRF):
             xcmd(
-            "cp {} {}".format(PRF, modelName),
-            verbose=False,)
+                "cp {} {}".format(PRF, modelName),
+                verbose=False,
+            )
         else:
             raise Exception("Profile ({}) does not exist !".format(PRF))
-        
+
         self.tv_model(model=0, ax=ax3, options="sqrt")
         ax3.set_title("Profile", fontsize=14)
-
 
         objFits = self.inFolder + "{}/{}j.fits".format(name, name)
         xcmd("cp {} ./{}j.fits".format(objFits, name), verbose=False)
         objFits = "{}j.fits".format(name)
-
 
         ## Monsta script
         script = (
@@ -2136,7 +2143,9 @@ class SBFobject:
         sc 1 """
             + str(sky)
             + """                            ! sky subtraction
-        rd 3 """+modelName+"""
+        rd 3 """
+            + modelName
+            + """
         si 1 3                               ! object - model
         rd 2 """
             + maskName
@@ -2158,7 +2167,6 @@ class SBFobject:
         self.tv_resid(model=0, ax=ax4, options="sqrt")
         ax4.set_title("Residual", fontsize=14)
 
-
         # self.tv_resid(model=0, ax=ax3, options="sqrt")
         # ax3.set_title("Residual", fontsize=14)
 
@@ -2170,12 +2178,9 @@ class SBFobject:
         # plt.savefig(pngName)
         # print("fig. name: ", pngName)
 
-
-
         os.chdir(cwd)
 
         return (ax1, ax2, ax3, ax4)
 
-        
 
 #########################################################

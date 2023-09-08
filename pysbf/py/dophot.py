@@ -310,8 +310,9 @@ def make_do_lkn(
         for i in range(len(df)):
             R = df.iloc[i]
             alk.write(
-                '%d %8.2f %7.2f %8.2f  1 %9.5f %8.5f %9.5f  %5s %7.4f %d %8.4f %6.4f %d %d\n' \
-                    %(R.id,
+                "%d %8.2f %7.2f %8.2f  1 %9.5f %8.5f %9.5f  %5s %7.4f %d %8.4f %6.4f %d %d\n"
+                % (
+                    R.id,
                     R.xpos,
                     R.ypos,
                     R.radius,

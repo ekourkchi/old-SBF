@@ -17,50 +17,50 @@ class LikeNew:
         self.likenew_ = mylib.likenew_
 
         self.likenew_.argtypes = [
-            c_char_p,       # fname
-            pt(c_int),      # n_fname
-            pt(c_int),      # icolor
-            pt(c_float),    # secperpixel
-            pt(c_float),    # fwhm
-            pt(c_int),      # kscale
-            pt(c_float),    # distance
-            pt(c_float),    # delta 
-            pt(c_float),    # snlim
-            pt(c_float),    # mlim
-            c_char_p,       # mname
-            pt(c_int),      # n_mname
-            pt(c_bool),     # yessoft
-            pt(c_bool),     # abmags
-            c_char_p,       # out_root
-            pt(c_int),      # n_out_root
-            pt(c_float),    # beta
-            pt(c_float),    # cnorm 
-            pt(c_float),    # cmax
-            pt(c_float),    # alpha
-            pt(c_float),    # tot_gc
-            pt(c_float),    # gamma
-            pt(c_float),    # gnorm
-            pt(c_float),    # tnorm
-            pt(c_float),    # tot_gal
-            pt(c_float),    # galpersec
-            pt(c_float),    # tysonempersec
-            pt(c_int),      # statua
+            c_char_p,  # fname
+            pt(c_int),  # n_fname
+            pt(c_int),  # icolor
+            pt(c_float),  # secperpixel
+            pt(c_float),  # fwhm
+            pt(c_int),  # kscale
+            pt(c_float),  # distance
+            pt(c_float),  # delta
+            pt(c_float),  # snlim
+            pt(c_float),  # mlim
+            c_char_p,  # mname
+            pt(c_int),  # n_mname
+            pt(c_bool),  # yessoft
+            pt(c_bool),  # abmags
+            c_char_p,  # out_root
+            pt(c_int),  # n_out_root
+            pt(c_float),  # beta
+            pt(c_float),  # cnorm
+            pt(c_float),  # cmax
+            pt(c_float),  # alpha
+            pt(c_float),  # tot_gc
+            pt(c_float),  # gamma
+            pt(c_float),  # gnorm
+            pt(c_float),  # tnorm
+            pt(c_float),  # tot_gal
+            pt(c_float),  # galpersec
+            pt(c_float),  # tysonempersec
+            pt(c_int),  # statua
         ]
 
-        self.in_folder = in_folder + '/'
-        self.out_folder = out_folder + '/'
+        self.in_folder = in_folder + "/"
+        self.out_folder = out_folder + "/"
 
     def run(
         self,
         fname="u12517se.lknj",
         icolor=5,
         secperpixel=0.128,
-        fwhm=1.4,    
-        distance=60, #  Mpc
-        gclf_width=1.3,   # magnitude
+        fwhm=1.4,
+        distance=60,  #  Mpc
+        gclf_width=1.3,  # magnitude
         kscale=1.2,
-        snlim=4.5,   
-        bright_cutoff=21.0,   #   magnitude
+        snlim=4.5,
+        bright_cutoff=21.0,  #   magnitude
         mname="u12517sej.ptm6",
         yessoft=False,
         abmags=True,
@@ -94,7 +94,7 @@ class LikeNew:
         tysonempersec = c_float()
         status = c_int()
 
-        kscale = int(kscale*10)
+        kscale = int(kscale * 10)
 
         self.likenew_(
             fname,
@@ -130,14 +130,14 @@ class LikeNew:
         out_dict = {}
 
         # output values from fortran subroutine
-        out_dict["beta"]    = beta.value
-        out_dict["cnorm"]   = cnorm.value
-        out_dict["cmax"]    = cmax.value
-        out_dict["alpha"]   = alpha.value
-        out_dict["tot_gc"]  = tot_gc.value
-        out_dict["gamma"]   = gamma.value
-        out_dict["gnorm"]   = gnorm.value
-        out_dict["tnorm"]   = tnorm.value
+        out_dict["beta"] = beta.value
+        out_dict["cnorm"] = cnorm.value
+        out_dict["cmax"] = cmax.value
+        out_dict["alpha"] = alpha.value
+        out_dict["tot_gc"] = tot_gc.value
+        out_dict["gamma"] = gamma.value
+        out_dict["gnorm"] = gnorm.value
+        out_dict["tnorm"] = tnorm.value
         out_dict["tot_gal"] = tot_gal.value
 
         out_dict["galpersec"] = galpersec.value
