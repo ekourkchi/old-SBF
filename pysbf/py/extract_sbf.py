@@ -137,7 +137,7 @@ def get_sbf_signal(
         + """ ! c0     taking the donut shape and putting the mask
         cop 7 6
         mi 7 3
-        tv 7
+        !tv 7 
         fluc 6 2 window         ! taking the fft of the mask multiply by the sqrt of the galaxy profile 
         ! fluc 6 4 expect plot ... 
         fluc 6 4 expect order="""
@@ -153,7 +153,7 @@ def get_sbf_signal(
         + str(KS0)
         + """ ks1="""
         + str(KS1)
-        + """ plot   ! 6:expectation opower spectrum   4:the power spectrum of data   ks: the power range
+        + """ plot   ! 6:expectation opower spectrum   4:the power spectrum of data   ks: the power range ->>
         print fluc file="""
         + power_file + """
         """
@@ -181,7 +181,7 @@ def get_sbf_signal(
 
 
 ##############################################################
-def plot_power(fname="test.c0", axes=None):
+def extract_sbf_result(fname):
 
     with open(fname, "r") as f:
         lines = f.readlines()
@@ -218,15 +218,24 @@ def plot_power(fname="test.c0", axes=None):
             P0.append(np.float(P0_))
             D.append(np.float(l[4]))
             X.append(np.float(l[1]))
-        except:
+        except Exception as e:
+            print(f"An exception occurred: {str(e)}")
+            print("line #{} in file: {}".format(i, fname))
             print(l[7], l[8])
-            print(P0_)
+            print("P0: ", P0_)
 
     K = np.asarray(K)  # K - Wavenumber
     P0 = np.asarray(P0)  # P0
     Power = np.asarray(Power)  # P0*E + P1
     D = np.asarray(D)  # Data/E0
     X = np.asarray(X)  # Expect(k)
+
+    return K, P0, P0_h, Power, D, X
+
+
+def plot_power(fname="test.c0", axes=None):
+
+    K, P0, P0_h, Power, D, X = extract_sbf_result(fname)
 
     if axes is None:
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 7))
@@ -631,7 +640,14 @@ class SBF_widgets:
                 sky_adjustment=sky_adjustment,
             )
 
-            output["iter%03d" % i] = P0
+            K, P, _, _, _, _ = extract_sbf_result(power_file)
+            out_dict = {}
+
+            out_dict["P0"] = P0
+            out_dict["K"] = K
+            out_dict["P"] = P
+            
+            output["iter%03d" % i] = out_dict
 
         return output
 
